@@ -1,10 +1,7 @@
-# bimaru.py: Template para implementação do projeto de Inteligência Artificial 2022/2023.
-# Devem alterar as classes e funções neste ficheiro de acordo com as instruções do enunciado.
-# Além das funções e classes já definidas, podem acrescentar outras que considerem pertinentes.
-
-# Grupo 00:
-# 00000 Nome1
-# 00000 Nome2
+# File: bimaru.py
+# Group 10:
+#   103124 Gonçalo Bárias
+#   102624 Raquel Braunschweig
 
 import sys
 from search import (
@@ -29,35 +26,35 @@ class BimaruState:
     def __lt__(self, other):
         return self.id < other.id
 
-    # TODO: outros metodos da classe
+    # TODO: other methods of the class
 
 
 class Board:
-    """Representação interna de um tabuleiro de Bimaru."""
+    """Internal representation of a Bimaru board."""
 
     def get_value(self, row: int, col: int) -> str:
-        """Devolve o valor na respetiva posição do tabuleiro."""
+        """Returns the value in the respective board position."""
         # TODO
         pass
 
     def adjacent_vertical_values(self, row: int, col: int) -> (str, str):
-        """Devolve os valores imediatamente acima e abaixo,
-        respectivamente."""
+        """Returns the values immediately above and below,
+        respectively."""
         # TODO
         pass
 
     def adjacent_horizontal_values(self, row: int, col: int) -> (str, str):
-        """Devolve os valores imediatamente à esquerda e à direita,
-        respectivamente."""
+        """Returns the values immediately to the left and right,
+        respectively."""
         # TODO
         pass
 
     @staticmethod
     def parse_instance():
-        """Lê o test do standard input (stdin) que é passado como argumento
-        e retorna uma instância da classe Board.
+        """Reads the test from the standard input (stdin) that is passed as an
+        argument and returns an instance of the Board class.
 
-        Por exemplo:
+        For example:
             $ python3 bimaru.py < input_T01
 
             > from sys import stdin
@@ -66,48 +63,48 @@ class Board:
         # TODO
         pass
 
-    # TODO: outros metodos da classe
+    # TODO: other methods of the class
 
 
 class Bimaru(Problem):
     def __init__(self, board: Board):
-        """O construtor especifica o estado inicial."""
+        """The constructor specifies the initial state."""
         # TODO
         pass
 
     def actions(self, state: BimaruState):
-        """Retorna uma lista de ações que podem ser executadas a
-        partir do estado passado como argumento."""
+        """Returns a list of actions that can be performed from
+        from the state passed as an argument."""
         # TODO
         pass
 
     def result(self, state: BimaruState, action):
-        """Retorna o estado resultante de executar a 'action' sobre
-        'state' passado como argumento. A ação a executar deve ser uma
-        das presentes na lista obtida pela execução de
+        """Returns the state obtained by executing the 'action' on the
+        'state' passed as an argument. The action to execute must be one
+        present in the list obtained by executing
         self.actions(state)."""
         # TODO
         pass
 
     def goal_test(self, state: BimaruState):
-        """Retorna True se e só se o estado passado como argumento é
-        um estado objetivo. Deve verificar se todas as posições do tabuleiro
-        estão preenchidas de acordo com as regras do problema."""
+        """Returns True if and only if the state passed as an argument is
+        an objective state. It should check that all positions on the board
+        are filled according to the rules of the problem."""
         # TODO
         pass
 
     def h(self, node: Node):
-        """Função heuristica utilizada para a procura A*."""
+        """Heuristic function used for the A* search."""
         # TODO
         pass
 
-    # TODO: outros metodos da classe
+    # TODO: other methods of the class
 
 
 if __name__ == "__main__":
     # TODO:
-    # Ler o ficheiro do standard input,
-    # Usar uma técnica de procura para resolver a instância,
-    # Retirar a solução a partir do nó resultante,
-    # Imprimir para o standard output no formato indicado.
+    # Read the standard input file,
+    # Use a search technique to solve the instance,
+    # Retrieve the solution from the resulting node,
+    # Print to the standard output in the indicated format.
     pass

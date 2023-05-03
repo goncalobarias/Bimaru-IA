@@ -93,13 +93,19 @@ class Node:
 
     def expand(self, problem):
         """List the nodes reachable in one step from this node."""
-        return [self.child_node(problem, action)
-                for action in problem.actions(self.state)]
+        return [
+            self.child_node(problem, action) for action in problem.actions(self.state)
+        ]
 
     def child_node(self, problem, action):
         """[Figure 3.10]"""
         next_state = problem.result(self.state, action)
-        next_node = Node(next_state, self, action, problem.path_cost(self.path_cost, self.state, action, next_state))
+        next_node = Node(
+            next_state,
+            self,
+            action,
+            problem.path_cost(self.path_cost, self.state, action, next_state),
+        )
         return next_node
 
     def solution(self):
@@ -107,7 +113,8 @@ class Node:
         return [node.action for node in self.path()[1:]]
 
     def path(self):
-        """Return a list of nodes forming the path from the root to this node."""
+        """Return a list of nodes forming the path from the root to
+        this node."""
         node, path_back = self, []
         while node:
             path_back.append(node)
@@ -230,8 +237,11 @@ def depth_first_graph_search(problem):
         if problem.goal_test(node.state):
             return node
         explored.add(node.state)
-        frontier.extend(child for child in node.expand(problem)
-                        if child.state not in explored and child not in frontier)
+        frontier.extend(
+            child
+            for child in node.expand(problem)
+            if child.state not in explored and child not in frontier
+        )
     return None
 
 
@@ -265,16 +275,21 @@ def best_first_graph_search(problem, f, display=False):
     There is a subtlety: the line "f = memoize(f, 'f')" means that the f
     values will be cached on the nodes as they are computed. So after doing
     a best first search you can examine the f values of the path returned."""
-    f = memoize(f, 'f')
+    f = memoize(f, "f")
     node = Node(problem.initial)
-    frontier = PriorityQueue('min', f)
+    frontier = PriorityQueue("min", f)
     frontier.append(node)
     explored = set()
     while frontier:
         node = frontier.pop()
         if problem.goal_test(node.state):
             if display:
-                print(len(explored), "paths have been expanded and", len(frontier), "paths remain in the frontier")
+                print(
+                    len(explored),
+                    "paths have been expanded and",
+                    len(frontier),
+                    "paths remain in the frontier",
+                )
             return node
         explored.add(node.state)
         for child in node.expand(problem):
@@ -299,16 +314,16 @@ def depth_limited_search(problem, limit=50):
         if problem.goal_test(node.state):
             return node
         elif limit == 0:
-            return 'cutoff'
+            return "cutoff"
         else:
             cutoff_occurred = False
             for child in node.expand(problem):
                 result = recursive_dls(child, problem, limit - 1)
-                if result == 'cutoff':
+                if result == "cutoff":
                     cutoff_occurred = True
                 elif result is not None:
                     return result
-            return 'cutoff' if cutoff_occurred else None
+            return "cutoff" if cutoff_occurred else None
 
     # Body of depth_limited_search:
     return recursive_dls(Node(problem.initial), problem, limit)
@@ -318,13 +333,15 @@ def iterative_deepening_search(problem):
     """[Figure 3.18]"""
     for depth in range(sys.maxsize):
         result = depth_limited_search(problem, depth)
-        if result != 'cutoff':
+        if result != "cutoff":
             return result
 
 
 # ______________________________________________________________________________
 # Bidirectional Search
-# Pseudocode from https://webdocs.cs.ualberta.ca/%7Eholte/Publications/MM-AAAI2016.pdf
+# Pseudocode from
+# https://webdocs.cs.ualberta.ca/%7Eholte/Publications/MM-AAAI2016.pdf
+
 
 def bidirectional_search(problem):
     e = 0
@@ -412,27 +429,31 @@ greedy_best_first_graph_search = best_first_graph_search
 # Greedy best-first search is accomplished by specifying f(n) = h(n).
 def greedy_search(problem, h=None):
     """f(n) = h(n)"""
-    h = memoize(h or problem.h, 'h')
+    h = memoize(h or problem.h, "h")
     return best_first_graph_search(problem, h)
+
 
 def astar_search(problem, h=None, display=False):
     """A* search is best-first graph search with f(n) = g(n)+h(n).
     You need to specify the h function when you call astar_search, or
     else in your Problem subclass."""
-    h = memoize(h or problem.h, 'h')
+    h = memoize(h or problem.h, "h")
     return best_first_graph_search(problem, lambda n: n.path_cost + h(n), display)
 
 
 # ______________________________________________________________________________
 # A* heuristics
 
+
 class EightPuzzle(Problem):
-    """ The problem of sliding tiles numbered from 1 to 8 on a 3x3 board, where one of the
-    squares is a blank. A state is represented as a tuple of length 9, where  element at
-    index i represents the tile number  at index i (0 if it's an empty square) """
+    """The problem of sliding tiles numbered from 1 to 8 on a 3x3 board, where
+    one of the squares is a blank. A state is represented as a tuple of
+    length 9, where  element at index i represents the tile number  at
+    index i (0 if it's an empty square)
+    """
 
     def __init__(self, initial, goal=(1, 2, 3, 4, 5, 6, 7, 8, 0)):
-        """ Define goal state and initialize a problem """
+        """Define goal state and initialize a problem"""
         super().__init__(initial, goal)
 
     def find_blank_square(self, state):
@@ -441,45 +462,49 @@ class EightPuzzle(Problem):
         return state.index(0)
 
     def actions(self, state):
-        """ Return the actions that can be executed in the given state.
+        """Return the actions that can be executed in the given state.
         The result would be a list, since there are only four possible actions
-        in any given state of the environment """
+        in any given state of the environment"""
 
-        possible_actions = ['UP', 'DOWN', 'LEFT', 'RIGHT']
+        possible_actions = ["UP", "DOWN", "LEFT", "RIGHT"]
         index_blank_square = self.find_blank_square(state)
 
         if index_blank_square % 3 == 0:
-            possible_actions.remove('LEFT')
+            possible_actions.remove("LEFT")
         if index_blank_square < 3:
-            possible_actions.remove('UP')
+            possible_actions.remove("UP")
         if index_blank_square % 3 == 2:
-            possible_actions.remove('RIGHT')
+            possible_actions.remove("RIGHT")
         if index_blank_square > 5:
-            possible_actions.remove('DOWN')
+            possible_actions.remove("DOWN")
 
         return possible_actions
 
     def result(self, state, action):
-        """ Given state and action, return a new state that is the result of the action.
-        Action is assumed to be a valid action in the state """
+        """Given state and action, return a new state that is the result of the
+        action. Action is assumed to be a valid action in the state"""
 
         # blank is the index of the blank square
         blank = self.find_blank_square(state)
         new_state = list(state)
 
-        delta = {'UP': -3, 'DOWN': 3, 'LEFT': -1, 'RIGHT': 1}
+        delta = {"UP": -3, "DOWN": 3, "LEFT": -1, "RIGHT": 1}
         neighbor = blank + delta[action]
-        new_state[blank], new_state[neighbor] = new_state[neighbor], new_state[blank]
+        new_state[blank], new_state[neighbor] = (
+            new_state[neighbor],
+            new_state[blank],
+        )
 
         return tuple(new_state)
 
     def goal_test(self, state):
-        """ Given a state, return True if state is a goal state or False, otherwise """
+        """Given a state, return True if state is a goal state or False,
+        otherwise"""
 
         return state == self.goal
 
     def check_solvability(self, state):
-        """ Checks if the given state is solvable """
+        """Checks if the given state is solvable"""
 
         inversion = 0
         for i in range(len(state)):
@@ -490,8 +515,8 @@ class EightPuzzle(Problem):
         return inversion % 2 == 0
 
     def h(self, node):
-        """ Return the heuristic value for a given state. Default heuristic function used is
-        h(n) = number of misplaced tiles """
+        """Return the heuristic value for a given state. Default heuristic
+        function used is h(n) = number of misplaced tiles"""
 
         return sum(s != g for (s, g) in zip(node.state, self.goal))
 
@@ -500,84 +525,84 @@ class EightPuzzle(Problem):
 
 
 class PlanRoute(Problem):
-    """ The problem of moving the Hybrid Wumpus Agent from one place to other """
+    """The problem of moving the Hybrid Wumpus Agent from one place to other"""
 
     def __init__(self, initial, goal, allowed, dimrow):
-        """ Define goal state and initialize a problem """
+        """Define goal state and initialize a problem"""
         super().__init__(initial, goal)
         self.dimrow = dimrow
         self.goal = goal
         self.allowed = allowed
 
     def actions(self, state):
-        """ Return the actions that can be executed in the given state.
+        """Return the actions that can be executed in the given state.
         The result would be a list, since there are only three possible actions
-        in any given state of the environment """
+        in any given state of the environment"""
 
-        possible_actions = ['Forward', 'TurnLeft', 'TurnRight']
+        possible_actions = ["Forward", "TurnLeft", "TurnRight"]
         x, y = state.get_location()
         orientation = state.get_orientation()
 
         # Prevent Bumps
-        if x == 1 and orientation == 'LEFT':
-            if 'Forward' in possible_actions:
-                possible_actions.remove('Forward')
-        if y == 1 and orientation == 'DOWN':
-            if 'Forward' in possible_actions:
-                possible_actions.remove('Forward')
-        if x == self.dimrow and orientation == 'RIGHT':
-            if 'Forward' in possible_actions:
-                possible_actions.remove('Forward')
-        if y == self.dimrow and orientation == 'UP':
-            if 'Forward' in possible_actions:
-                possible_actions.remove('Forward')
+        if x == 1 and orientation == "LEFT":
+            if "Forward" in possible_actions:
+                possible_actions.remove("Forward")
+        if y == 1 and orientation == "DOWN":
+            if "Forward" in possible_actions:
+                possible_actions.remove("Forward")
+        if x == self.dimrow and orientation == "RIGHT":
+            if "Forward" in possible_actions:
+                possible_actions.remove("Forward")
+        if y == self.dimrow and orientation == "UP":
+            if "Forward" in possible_actions:
+                possible_actions.remove("Forward")
 
         return possible_actions
 
     def result(self, state, action):
-        """ Given state and action, return a new state that is the result of the action.
-        Action is assumed to be a valid action in the state """
+        """Given state and action, return a new state that is the result of the
+        action. Action is assumed to be a valid action in the state"""
         x, y = state.get_location()
         proposed_loc = list()
 
         # Move Forward
-        if action == 'Forward':
-            if state.get_orientation() == 'UP':
+        if action == "Forward":
+            if state.get_orientation() == "UP":
                 proposed_loc = [x, y + 1]
-            elif state.get_orientation() == 'DOWN':
+            elif state.get_orientation() == "DOWN":
                 proposed_loc = [x, y - 1]
-            elif state.get_orientation() == 'LEFT':
+            elif state.get_orientation() == "LEFT":
                 proposed_loc = [x - 1, y]
-            elif state.get_orientation() == 'RIGHT':
+            elif state.get_orientation() == "RIGHT":
                 proposed_loc = [x + 1, y]
             else:
-                raise Exception('InvalidOrientation')
+                raise Exception("InvalidOrientation")
 
         # Rotate counter-clockwise
-        elif action == 'TurnLeft':
-            if state.get_orientation() == 'UP':
-                state.set_orientation('LEFT')
-            elif state.get_orientation() == 'DOWN':
-                state.set_orientation('RIGHT')
-            elif state.get_orientation() == 'LEFT':
-                state.set_orientation('DOWN')
-            elif state.get_orientation() == 'RIGHT':
-                state.set_orientation('UP')
+        elif action == "TurnLeft":
+            if state.get_orientation() == "UP":
+                state.set_orientation("LEFT")
+            elif state.get_orientation() == "DOWN":
+                state.set_orientation("RIGHT")
+            elif state.get_orientation() == "LEFT":
+                state.set_orientation("DOWN")
+            elif state.get_orientation() == "RIGHT":
+                state.set_orientation("UP")
             else:
-                raise Exception('InvalidOrientation')
+                raise Exception("InvalidOrientation")
 
         # Rotate clockwise
-        elif action == 'TurnRight':
-            if state.get_orientation() == 'UP':
-                state.set_orientation('RIGHT')
-            elif state.get_orientation() == 'DOWN':
-                state.set_orientation('LEFT')
-            elif state.get_orientation() == 'LEFT':
-                state.set_orientation('UP')
-            elif state.get_orientation() == 'RIGHT':
-                state.set_orientation('DOWN')
+        elif action == "TurnRight":
+            if state.get_orientation() == "UP":
+                state.set_orientation("RIGHT")
+            elif state.get_orientation() == "DOWN":
+                state.set_orientation("LEFT")
+            elif state.get_orientation() == "LEFT":
+                state.set_orientation("UP")
+            elif state.get_orientation() == "RIGHT":
+                state.set_orientation("DOWN")
             else:
-                raise Exception('InvalidOrientation')
+                raise Exception("InvalidOrientation")
 
         if proposed_loc in self.allowed:
             state.set_location(proposed_loc[0], [proposed_loc[1]])
@@ -585,12 +610,13 @@ class PlanRoute(Problem):
         return state
 
     def goal_test(self, state):
-        """ Given a state, return True if state is a goal state or False, otherwise """
+        """Given a state, return True if state is a goal state or False,
+        otherwise"""
 
         return state.get_location() == tuple(self.goal)
 
     def h(self, node):
-        """ Return the heuristic value for a given state."""
+        """Return the heuristic value for a given state."""
 
         # Manhattan Heuristic Function
         x1, y1 = node.state.get_location()
@@ -605,7 +631,7 @@ class PlanRoute(Problem):
 
 def recursive_best_first_search(problem, h=None):
     """[Figure 3.26]"""
-    h = memoize(h or problem.h, 'h')
+    h = memoize(h or problem.h, "h")
 
     def RBFS(problem, node, flimit):
         if problem.goal_test(node.state):
@@ -646,7 +672,9 @@ def hill_climbing(problem):
         neighbors = current.expand(problem)
         if not neighbors:
             break
-        neighbor = argmax_random_tie(neighbors, key=lambda node: problem.value(node.state))
+        neighbor = argmax_random_tie(
+            neighbors, key=lambda node: problem.value(node.state)
+        )
         if problem.value(neighbor.state) <= problem.value(current.state):
             break
         current = neighbor
@@ -676,7 +704,7 @@ def simulated_annealing(problem, schedule=exp_schedule()):
 
 
 def simulated_annealing_full(problem, schedule=exp_schedule()):
-    """ This version returns all the states encountered in reaching
+    """This version returns all the states encountered in reaching
     the goal state."""
     states = []
     current = Node(problem.initial)
@@ -695,12 +723,12 @@ def simulated_annealing_full(problem, schedule=exp_schedule()):
 
 
 def and_or_graph_search(problem):
-    """[Figure 4.11]Used when the environment is nondeterministic and completely observable.
-    Contains OR nodes where the agent is free to choose any action.
-    After every action there is an AND node which contains all possible states
-    the agent may reach due to stochastic nature of environment.
-    The agent must be able to handle all possible states of the AND node (as it
-    may end up in any of them).
+    """[Figure 4.11]Used when the environment is nondeterministic and
+    completely observable. Contains OR nodes where the agent is free to choose
+    any action. After every action there is an AND node which contains all
+    possible states the agent may reach due to stochastic nature of
+    environment. The agent must be able to handle all possible states of the
+    AND node (as it may end up in any of them).
     Returns a conditional plan to reach goal state,
     or failure if the former is not possible."""
 
@@ -712,13 +740,20 @@ def and_or_graph_search(problem):
         if state in path:
             return None
         for action in problem.actions(state):
-            plan = and_search(problem.result(state, action),
-                              problem, path + [state, ])
+            plan = and_search(
+                problem.result(state, action),
+                problem,
+                path
+                + [
+                    state,
+                ],
+            )
             if plan is not None:
                 return [action, plan]
 
     def and_search(states, problem, path):
-        """Returns plan in form of dictionary where we take action plan[s] if we reach state s."""
+        """Returns plan in form of dictionary where we take action plan[s] if
+        we reach state s."""
         plan = {}
         for s in states:
             plan[s] = or_search(s, problem, path)
@@ -731,16 +766,17 @@ def and_or_graph_search(problem):
 
 
 # Pre-defined actions for PeakFindingProblem
-directions4 = {'W': (-1, 0), 'N': (0, 1), 'E': (1, 0), 'S': (0, -1)}
+directions4 = {"W": (-1, 0), "N": (0, 1), "E": (1, 0), "S": (0, -1)}
 directions8 = dict(directions4)
-directions8.update({'NW': (-1, 1), 'NE': (1, 1), 'SE': (1, -1), 'SW': (-1, -1)})
+directions8.update({"NW": (-1, 1), "NE": (1, 1), "SE": (1, -1), "SW": (-1, -1)})
 
 
 class PeakFindingProblem(Problem):
     """Problem of finding the highest peak in a limited grid"""
 
     def __init__(self, initial, grid, defined_actions=directions4):
-        """The grid is a 2 dimensional array/list whose state is specified by tuple of indices"""
+        """The grid is a 2 dimensional array/list whose state is specified by
+        tuple of indices"""
         super().__init__(initial)
         self.grid = grid
         self.defined_actions = defined_actions
@@ -750,7 +786,8 @@ class PeakFindingProblem(Problem):
         assert self.m > 0
 
     def actions(self, state):
-        """Returns the list of actions which are allowed to be taken from the given state"""
+        """Returns the list of actions which are allowed to be taken from the
+        given state"""
         allowed_actions = []
         for action in self.defined_actions:
             next_state = vector_add(state, self.defined_actions[action])
@@ -803,9 +840,10 @@ class OnlineDFSAgent:
                 if len(self.unbacktracked[s1]) == 0:
                     self.a = None
                 else:
-                    # else a <- an action b such that result[s', b] = POP(unbacktracked[s'])
+                    # else a <- an action b
+                    # such that result[s', b] = POP(unbacktracked[s'])
                     unbacktracked_pop = self.unbacktracked.pop(s1)
-                    for (s, b) in self.result.keys():
+                    for s, b in self.result.keys():
                         if self.result[(s, b)] == unbacktracked_pop:
                             self.a = b
                             break
@@ -844,7 +882,8 @@ class OnlineSearchProblem(Problem):
         return self.graph.least_costs[state]
 
     def c(self, s, a, s1):
-        """Returns a cost estimate for an agent to move from state 's' to state 's1'."""
+        """Returns a cost estimate for an agent to move from state 's' to
+        state 's1'."""
         return 1
 
     def update_state(self, percept):
@@ -857,7 +896,7 @@ class OnlineSearchProblem(Problem):
 
 
 class LRTAStarAgent:
-    """ [Figure 4.24]
+    """[Figure 4.24]
     Abstract class for LRTA*-Agent. A problem needs to be
     provided which is an instance of a subclass of Problem Class.
 
@@ -879,15 +918,20 @@ class LRTAStarAgent:
             if s1 not in self.H:
                 self.H[s1] = self.problem.h(s1)
             if self.s is not None:
-                # self.result[(self.s, self.a)] = s1    # no need as we are using problem.output
+                # self.result[(self.s, self.a)] = s1
+                # no need as we are using problem.output
 
                 # minimum cost for action b in problem.actions(s)
-                self.H[self.s] = min(self.LRTA_cost(self.s, b, self.problem.output(self.s, b),
-                                                    self.H) for b in self.problem.actions(self.s))
+                self.H[self.s] = min(
+                    self.LRTA_cost(self.s, b, self.problem.output(self.s, b), self.H)
+                    for b in self.problem.actions(self.s)
+                )
 
             # an action b in problem.actions(s1) that minimizes costs
-            self.a = min(self.problem.actions(s1),
-                         key=lambda b: self.LRTA_cost(s1, b, self.problem.output(s1, b), self.H))
+            self.a = min(
+                self.problem.actions(s1),
+                key=lambda b: self.LRTA_cost(s1, b, self.problem.output(s1, b), self.H),
+            )
 
             self.s = s1
             return self.a
@@ -900,7 +944,8 @@ class LRTAStarAgent:
             return self.problem.h(s)
         else:
             # sometimes we need to get H[s1] which we haven't yet added to H
-            # to replace this try, except: we can initialize H with values from problem.h
+            # to replace this try, except: we can initialize H with values from
+            # problem.h
             try:
                 return self.problem.c(s, a, s1) + self.H[s1]
             except:
@@ -925,11 +970,15 @@ def genetic_search(problem, ngen=1000, pmut=0.1, n=20):
     return genetic_algorithm(states[:n], problem.value, ngen, pmut)
 
 
-def genetic_algorithm(population, fitness_fn, gene_pool=[0, 1], f_thres=None, ngen=1000, pmut=0.1):
+def genetic_algorithm(
+    population, fitness_fn, gene_pool=[0, 1], f_thres=None, ngen=1000, pmut=0.1
+):
     """[Figure 4.8]"""
     for i in range(ngen):
-        population = [mutate(recombine(*select(2, population, fitness_fn)), gene_pool, pmut)
-                      for i in range(len(population))]
+        population = [
+            mutate(recombine(*select(2, population, fitness_fn)), gene_pool, pmut)
+            for i in range(len(population))
+        ]
 
         fittest_individual = fitness_threshold(fitness_fn, f_thres, population)
         if fittest_individual:
@@ -957,7 +1006,9 @@ def init_population(pop_number, gene_pool, state_length):
     g = len(gene_pool)
     population = []
     for i in range(pop_number):
-        new_individual = [gene_pool[random.randrange(0, g)] for j in range(state_length)]
+        new_individual = [
+            gene_pool[random.randrange(0, g)] for j in range(state_length)
+        ]
         population.append(new_individual)
 
     return population
@@ -983,7 +1034,7 @@ def recombine_uniform(x, y):
         ix = indexes[i]
         result[ix] = x[ix] if i < n / 2 else y[ix]
 
-    return ''.join(str(r) for r in result)
+    return "".join(str(r) for r in result)
 
 
 def mutate(x, gene_pool, pmut):
@@ -996,7 +1047,7 @@ def mutate(x, gene_pool, pmut):
     r = random.randrange(0, g)
 
     new_gene = gene_pool[r]
-    return x[:c] + [new_gene] + x[c + 1:]
+    return x[:c] + [new_gene] + x[c + 1 :]
 
 
 # _____________________________________________________________________________
@@ -1027,9 +1078,10 @@ class Graph:
             self.make_undirected()
 
     def make_undirected(self):
-        """Make a digraph into an undirected graph by adding symmetric edges."""
+        """Make a digraph into an undirected graph by adding symmetric
+        edges."""
         for a in list(self.graph_dict.keys()):
-            for (b, dist) in self.graph_dict[a].items():
+            for b, dist in self.graph_dict[a].items():
                 self.connect1(b, a, dist)
 
     def connect(self, A, B, distance=1):
@@ -1062,12 +1114,18 @@ class Graph:
 
 
 def UndirectedGraph(graph_dict=None):
-    """Build a Graph where every edge (including future ones) goes both ways."""
+    """Build a Graph where every edge (including future ones) goes both
+    ways."""
     return Graph(graph_dict=graph_dict, directed=False)
 
 
-def RandomGraph(nodes=list(range(10)), min_links=2, width=400, height=300,
-                curvature=lambda: random.uniform(1.1, 1.5)):
+def RandomGraph(
+    nodes=list(range(10)),
+    min_links=2,
+    width=400,
+    height=300,
+    curvature=lambda: random.uniform(1.1, 1.5),
+):
     """Construct a random graph, with the specified nodes, and random links.
     The nodes are laid out randomly on a (width x height) rectangle.
     Then each node is connected to the min_links nearest neighbors.
@@ -1099,28 +1157,45 @@ def RandomGraph(nodes=list(range(10)), min_links=2, width=400, height=300,
 """ [Figure 3.2]
 Simplified road map of Romania
 """
-romania_map = UndirectedGraph(dict(
-    Arad=dict(Zerind=75, Sibiu=140, Timisoara=118),
-    Bucharest=dict(Urziceni=85, Pitesti=101, Giurgiu=90, Fagaras=211),
-    Craiova=dict(Drobeta=120, Rimnicu=146, Pitesti=138),
-    Drobeta=dict(Mehadia=75),
-    Eforie=dict(Hirsova=86),
-    Fagaras=dict(Sibiu=99),
-    Hirsova=dict(Urziceni=98),
-    Iasi=dict(Vaslui=92, Neamt=87),
-    Lugoj=dict(Timisoara=111, Mehadia=70),
-    Oradea=dict(Zerind=71, Sibiu=151),
-    Pitesti=dict(Rimnicu=97),
-    Rimnicu=dict(Sibiu=80),
-    Urziceni=dict(Vaslui=142)))
+romania_map = UndirectedGraph(
+    dict(
+        Arad=dict(Zerind=75, Sibiu=140, Timisoara=118),
+        Bucharest=dict(Urziceni=85, Pitesti=101, Giurgiu=90, Fagaras=211),
+        Craiova=dict(Drobeta=120, Rimnicu=146, Pitesti=138),
+        Drobeta=dict(Mehadia=75),
+        Eforie=dict(Hirsova=86),
+        Fagaras=dict(Sibiu=99),
+        Hirsova=dict(Urziceni=98),
+        Iasi=dict(Vaslui=92, Neamt=87),
+        Lugoj=dict(Timisoara=111, Mehadia=70),
+        Oradea=dict(Zerind=71, Sibiu=151),
+        Pitesti=dict(Rimnicu=97),
+        Rimnicu=dict(Sibiu=80),
+        Urziceni=dict(Vaslui=142),
+    )
+)
 romania_map.locations = dict(
-    Arad=(91, 492), Bucharest=(400, 327), Craiova=(253, 288),
-    Drobeta=(165, 299), Eforie=(562, 293), Fagaras=(305, 449),
-    Giurgiu=(375, 270), Hirsova=(534, 350), Iasi=(473, 506),
-    Lugoj=(165, 379), Mehadia=(168, 339), Neamt=(406, 537),
-    Oradea=(131, 571), Pitesti=(320, 368), Rimnicu=(233, 410),
-    Sibiu=(207, 457), Timisoara=(94, 410), Urziceni=(456, 350),
-    Vaslui=(509, 444), Zerind=(108, 531))
+    Arad=(91, 492),
+    Bucharest=(400, 327),
+    Craiova=(253, 288),
+    Drobeta=(165, 299),
+    Eforie=(562, 293),
+    Fagaras=(305, 449),
+    Giurgiu=(375, 270),
+    Hirsova=(534, 350),
+    Iasi=(473, 506),
+    Lugoj=(165, 379),
+    Mehadia=(168, 339),
+    Neamt=(406, 537),
+    Oradea=(131, 571),
+    Pitesti=(320, 368),
+    Rimnicu=(233, 410),
+    Sibiu=(207, 457),
+    Timisoara=(94, 410),
+    Urziceni=(456, 350),
+    Vaslui=(509, 444),
+    Zerind=(108, 531),
+)
 
 """ [Figure 4.9]
 Eight possible states of the vacumm world
@@ -1136,47 +1211,56 @@ Each state is represented as
 7 - CCL     Clean                         Clean                       Left
 8 - CCR     Clean                         Clean                       Right
 """
-vacuum_world = Graph(dict(
-    State_1=dict(Suck=['State_7', 'State_5'], Right=['State_2']),
-    State_2=dict(Suck=['State_8', 'State_4'], Left=['State_2']),
-    State_3=dict(Suck=['State_7'], Right=['State_4']),
-    State_4=dict(Suck=['State_4', 'State_2'], Left=['State_3']),
-    State_5=dict(Suck=['State_5', 'State_1'], Right=['State_6']),
-    State_6=dict(Suck=['State_8'], Left=['State_5']),
-    State_7=dict(Suck=['State_7', 'State_3'], Right=['State_8']),
-    State_8=dict(Suck=['State_8', 'State_6'], Left=['State_7'])
-))
+vacuum_world = Graph(
+    dict(
+        State_1=dict(Suck=["State_7", "State_5"], Right=["State_2"]),
+        State_2=dict(Suck=["State_8", "State_4"], Left=["State_2"]),
+        State_3=dict(Suck=["State_7"], Right=["State_4"]),
+        State_4=dict(Suck=["State_4", "State_2"], Left=["State_3"]),
+        State_5=dict(Suck=["State_5", "State_1"], Right=["State_6"]),
+        State_6=dict(Suck=["State_8"], Left=["State_5"]),
+        State_7=dict(Suck=["State_7", "State_3"], Right=["State_8"]),
+        State_8=dict(Suck=["State_8", "State_6"], Left=["State_7"]),
+    )
+)
 
 """ [Figure 4.23]
 One-dimensional state space Graph
 """
-one_dim_state_space = Graph(dict(
-    State_1=dict(Right='State_2'),
-    State_2=dict(Right='State_3', Left='State_1'),
-    State_3=dict(Right='State_4', Left='State_2'),
-    State_4=dict(Right='State_5', Left='State_3'),
-    State_5=dict(Right='State_6', Left='State_4'),
-    State_6=dict(Left='State_5')
-))
+one_dim_state_space = Graph(
+    dict(
+        State_1=dict(Right="State_2"),
+        State_2=dict(Right="State_3", Left="State_1"),
+        State_3=dict(Right="State_4", Left="State_2"),
+        State_4=dict(Right="State_5", Left="State_3"),
+        State_5=dict(Right="State_6", Left="State_4"),
+        State_6=dict(Left="State_5"),
+    )
+)
 one_dim_state_space.least_costs = dict(
-    State_1=8,
-    State_2=9,
-    State_3=2,
-    State_4=2,
-    State_5=4,
-    State_6=3)
+    State_1=8, State_2=9, State_3=2, State_4=2, State_5=4, State_6=3
+)
 
 """ [Figure 6.1]
 Principal states and territories of Australia
 """
-australia_map = UndirectedGraph(dict(
-    T=dict(),
-    SA=dict(WA=1, NT=1, Q=1, NSW=1, V=1),
-    NT=dict(WA=1, Q=1),
-    NSW=dict(Q=1, V=1)))
-australia_map.locations = dict(WA=(120, 24), NT=(135, 20), SA=(135, 30),
-                               Q=(145, 20), NSW=(145, 32), T=(145, 42),
-                               V=(145, 37))
+australia_map = UndirectedGraph(
+    dict(
+        T=dict(),
+        SA=dict(WA=1, NT=1, Q=1, NSW=1, V=1),
+        NT=dict(WA=1, Q=1),
+        NSW=dict(Q=1, V=1),
+    )
+)
+australia_map.locations = dict(
+    WA=(120, 24),
+    NT=(135, 20),
+    SA=(135, 30),
+    Q=(145, 20),
+    NSW=(145, 32),
+    T=(145, 42),
+    V=(145, 37),
+)
 
 
 class GraphProblem(Problem):
@@ -1208,7 +1292,7 @@ class GraphProblem(Problem):
 
     def h(self, node):
         """h function is straight-line distance from a node's state to goal."""
-        locs = getattr(self.graph, 'locations', None)
+        locs = getattr(self.graph, "locations", None)
         if locs:
             if type(node) is str:
                 return int(distance(locs[node], locs[self.goal]))
@@ -1223,8 +1307,10 @@ class GraphProblemStochastic(GraphProblem):
     A version of GraphProblem where an action can lead to
     nondeterministic output i.e. multiple possible states.
 
-    Define the graph as dict(A = dict(Action = [[<Result 1>, <Result 2>, ...], <cost>], ...), ...)
-    A the dictionary format is different, make sure the graph is created as a directed graph.
+    Define the graph as
+    dict(A = dict(Action = [[<Result 1>, <Result 2>, ...], <cost>], ...), ...)
+    A the dictionary format is different, make sure the graph is created as a
+    directed graph.
     """
 
     def result(self, state, action):
@@ -1257,8 +1343,9 @@ class NQueensProblem(Problem):
             return []  # All columns filled; no successors
         else:
             col = state.index(-1)
-            return [row for row in range(self.N)
-                    if not self.conflicted(state, row, col)]
+            return [
+                row for row in range(self.N) if not self.conflicted(state, row, col)
+            ]
 
     def result(self, state, row):
         """Place the next queen at the given row."""
@@ -1269,28 +1356,31 @@ class NQueensProblem(Problem):
 
     def conflicted(self, state, row, col):
         """Would placing a queen at (row, col) conflict with anything?"""
-        return any(self.conflict(row, col, state[c], c)
-                   for c in range(col))
+        return any(self.conflict(row, col, state[c], c) for c in range(col))
 
     def conflict(self, row1, col1, row2, col2):
-        """Would putting two queens in (row1, col1) and (row2, col2) conflict?"""
-        return (row1 == row2 or  # same row
-                col1 == col2 or  # same column
-                row1 - col1 == row2 - col2 or  # same \ diagonal
-                row1 + col1 == row2 + col2)  # same / diagonal
+        """Would putting two queens in (row1, col1) and (row2, col2)
+        conflict?"""
+        return (
+            row1 == row2
+            or col1 == col2  # same row
+            or row1 - col1 == row2 - col2  # same column
+            or row1 + col1 == row2 + col2  # same \ diagonal
+        )  # same / diagonal
 
     def goal_test(self, state):
         """Check if all columns filled, no conflicts."""
         if state[-1] == -1:
             return False
-        return not any(self.conflicted(state, state[col], col)
-                       for col in range(len(state)))
+        return not any(
+            self.conflicted(state, state[col], col) for col in range(len(state))
+        )
 
     def h(self, node):
         """Return number of conflicting queens for a given node"""
         num_conflicts = 0
-        for (r1, c1) in enumerate(node.state):
-            for (r2, c2) in enumerate(node.state):
+        for r1, c1 in enumerate(node.state):
+            for r2, c2 in enumerate(node.state):
                 if (r1, c1) != (r2, c2):
                     num_conflicts += self.conflict(r1, c1, r2, c2)
 
@@ -1302,12 +1392,26 @@ class NQueensProblem(Problem):
 # iterative-repair and related search techniques, as suggested by Justin Boyan.
 
 
-ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-cubes16 = ['FORIXB', 'MOQABJ', 'GURILW', 'SETUPL',
-           'CMPDAE', 'ACITAO', 'SLCRAE', 'ROMASH',
-           'NODESW', 'HEFIYE', 'ONUDTK', 'TEVIGN',
-           'ANEDVZ', 'PINESH', 'ABILYT', 'GKYLEU']
+cubes16 = [
+    "FORIXB",
+    "MOQABJ",
+    "GURILW",
+    "SETUPL",
+    "CMPDAE",
+    "ACITAO",
+    "SLCRAE",
+    "ROMASH",
+    "NODESW",
+    "HEFIYE",
+    "ONUDTK",
+    "TEVIGN",
+    "ANEDVZ",
+    "PINESH",
+    "ABILYT",
+    "GKYLEU",
+]
 
 
 def random_boggle(n=4):
@@ -1322,7 +1426,7 @@ def random_boggle(n=4):
 # 2274 words, for a score of 9837
 
 
-boyan_best = list('RSTCSDEIAEGNLRPEATESMSSID')
+boyan_best = list("RSTCSDEIAEGNLRPEATESMSSID")
 
 
 def print_boggle(board):
@@ -1330,13 +1434,12 @@ def print_boggle(board):
     n2 = len(board)
     n = exact_sqrt(n2)
     for i in range(n2):
-
         if i % n == 0 and i > 0:
             print()
-        if board[i] == 'Q':
-            print('Qu', end=' ')
+        if board[i] == "Q":
+            print("Qu", end=" ")
         else:
-            print(str(board[i]) + ' ', end=' ')
+            print(str(board[i]) + " ", end=" ")
     print()
 
 
@@ -1395,8 +1498,10 @@ class Wordlist:
         self.bounds = {}
         for c in ALPHABET:
             c2 = chr(ord(c) + 1)
-            self.bounds[c] = (bisect.bisect(self.words, c),
-                              bisect.bisect(self.words, c2))
+            self.bounds[c] = (
+                bisect.bisect(self.words, c),
+                bisect.bisect(self.words, c2),
+            )
 
     def lookup(self, prefix, lo=0, hi=None):
         """See if prefix is in dictionary, as a full word or as a prefix.
@@ -1443,7 +1548,7 @@ class BoggleFinder:
         self.found = {}
         for i in range(len(board)):
             lo, hi = self.wordlist.bounds[board[i]]
-            self.find(lo, hi, i, [], '')
+            self.find(lo, hi, i, [], "")
         return self
 
     def find(self, lo, hi, i, visited, prefix):
@@ -1458,8 +1563,8 @@ class BoggleFinder:
                 self.found[prefix] = True
             visited.append(i)
             c = self.board[i]
-            if c == 'Q':
-                c = 'QU'
+            if c == "Q":
+                c = "QU"
             prefix += c
             for j in self.neighbors[i]:
                 self.find(wordpos, hi, j, visited, prefix)
@@ -1550,17 +1655,23 @@ class InstrumentedProblem(Problem):
         return getattr(self.problem, attr)
 
     def __repr__(self):
-        return '<{:4d}/{:4d}/{:4d}/{}>'.format(self.succs, self.goal_tests,
-                                               self.states, str(self.found)[:4])
+        return "<{:4d}/{:4d}/{:4d}/{}>".format(
+            self.succs, self.goal_tests, self.states, str(self.found)[:4]
+        )
 
 
-def compare_searchers(problems, header,
-                      searchers=[breadth_first_tree_search,
-                                 breadth_first_graph_search,
-                                 depth_first_graph_search,
-                                 iterative_deepening_search,
-                                 depth_limited_search,
-                                 recursive_best_first_search]):
+def compare_searchers(
+    problems,
+    header,
+    searchers=[
+        breadth_first_tree_search,
+        breadth_first_graph_search,
+        depth_first_graph_search,
+        iterative_deepening_search,
+        depth_limited_search,
+        recursive_best_first_search,
+    ],
+):
     def do(searcher, problem):
         p = InstrumentedProblem(problem)
         searcher(p)
@@ -1572,8 +1683,16 @@ def compare_searchers(problems, header,
 
 def compare_graph_searchers():
     """Prints a table of search results."""
-    compare_searchers(problems=[GraphProblem('Arad', 'Bucharest', romania_map),
-                                GraphProblem('Oradea', 'Neamt', romania_map),
-                                GraphProblem('Q', 'WA', australia_map)],
-                      header=['Searcher', 'romania_map(Arad, Bucharest)',
-                              'romania_map(Oradea, Neamt)', 'australia_map'])
+    compare_searchers(
+        problems=[
+            GraphProblem("Arad", "Bucharest", romania_map),
+            GraphProblem("Oradea", "Neamt", romania_map),
+            GraphProblem("Q", "WA", australia_map),
+        ],
+        header=[
+            "Searcher",
+            "romania_map(Arad, Bucharest)",
+            "romania_map(Oradea, Neamt)",
+            "australia_map",
+        ],
+    )
