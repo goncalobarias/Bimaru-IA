@@ -1,4 +1,8 @@
-"""Provides some utilities widely used by other modules"""
+"""
+Provides some utilities widely used by other modules
+
+Source: https://github.com/aimacode
+"""
 
 import bisect
 import collections
