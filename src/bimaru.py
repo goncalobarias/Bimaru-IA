@@ -79,6 +79,99 @@ class Board:
             + self.get_adjacent_diagonal_values(row, col)
         )
 
+    def turn_diagonal_values_water(self, row: int, col: int):
+        """Turns diagonal values into water if they arent "W" or out of limit."""
+        if self.get_value(row - 1, col - 1) == _incomp_vals[0]:  # only if "?"
+            self.cell[row - 1, col - 1] = _water_vals[1]
+        if self.get_value(row + 1, col - 1) == _incomp_vals[0]:
+            self.cell[row + 1, col - 1] = _water_vals[1]
+        if self.get_value(row + 1, col + 1) == _incomp_vals[0]:
+            self.cell[row + 1, col + 1] = _water_vals[1]
+        if self.get_value(row + 1, col - 1) == _incomp_vals[0]:
+            self.cell[row + 1, col - 1] = _water_vals[1]
+        pass
+
+    def isolate_top_bottom(self, row: int, col: int, i: int):
+        """Isolates top (T or t) and bottom (B or b) pieces."""
+        # puts cell above in case of t as water, otherwise for b
+        if self.get_value(row + (-1) ^ (i + 1), col) == _incomp_vals[0]:  # only if "?"
+            self.cells[row + (-1) ^ (i + 1), col] = _water_vals[1]
+        # adds x bellow in case of t, otherwise for b
+        if self.get_value(row + (-1) ^ (i), col) == _incomp_vals[0]:
+            self.cells[row + (-1) ^ (i), col] = _incomp_vals[1]
+            self.turn_diagonal_values_water(self, row + (-1) ^ (i), col)
+        pass
+
+    def isolate_left_right(self, row: int, col: int, i: int):
+        """Isolates left (L or l) and right (R or r) pieces."""
+        # puts cell at the left in case of r as water, otherwise for l
+        if self.get_value(row, col + (-1) ^ (i + 1)) == _incomp_vals[0]:  # only if "?"
+            self.cells[row, col + (-1) ^ (i + 1)] = _water_vals[1]
+        # adds x at the right in case of l, otherwise for r
+        if self.get_value(row, col + (-1) ^ (i)) == _incomp_vals[0]:
+            self.cells[row, col + (-1) ^ (i)] = _incomp_vals[1]
+            self.turn_diagonal_values_water(self, row, col + (-1) ^ (i))
+        pass
+
+    def isolate_circle(self, row: int, col: int):
+        """Isolates circle (C or c) pieces."""
+        water = _water_vals[1]
+        question_mark = _incomp_vals[0]
+
+        # adds waters around vertical and horizontal adjacent values
+        if self.get_value(row, col - 1) == question_mark:
+            self.cells[row, col - 1] = water
+        if self.get_value(row, col + 1) == question_mark:
+            self.cells[row, col + 1] = water
+        if self.get_value(row - 1, col) == question_mark:
+            self.cells[row - 1, col] = water
+        if self.get_value(row + 1, col) == question_mark:
+            self.cells[row + 1, col] = water
+        pass
+
+    def isolate_middle(self, row: int, col: int):
+        """Isolates middle (M or m) pieces."""
+        water = _water_vals[1]
+        question_mark = _incomp_vals[0]
+        x = _incomp_vals[1]
+
+        horizontal_vals = self.get_adjacent_horizontal_values(self, row, col)
+        i = 0
+        while i < 2:
+            val = horizontal_vals[i]
+            if val == water or val == _water_vals[0]:
+                # adds x in vertical values
+                if self.get_value(row + 1, col) == question_mark:
+                    self.cells[row + 1, col] = x
+                    self.turn_diagonal_values_water(self, row + 1, col)
+                if self.get_value(row - 1, col) == question_mark:
+                    self.cells[row - 1, col] = x
+                    self.turn_diagonal_values_water(self, row - 1, col)
+                # adds water in other horizontal value
+                if self.get_value(row, col + (-1) ^ (i)) == question_mark:
+                    self.cells[row, col] = water
+                    pass
+            i += 1
+
+        vertical_vals = self.get_adjacent_vertical_values(self, row, col)
+        i = 0
+        while i < 2:
+            val = vertical_vals[i]
+            if val == water or val == _water_vals[0]:
+                # adds x in horizontal values
+                if self.get_value(row, col + 1) == question_mark:
+                    self.cells[row, col + 1] = x
+                    self.turn_diagonal_values_water(self, row, col + 1)
+                if self.get_value(row, col - 1) == question_mark:
+                    self.cells[row, col - 1] = x
+                    self.turn_diagonal_values_water(self, row, col - 1)
+                # adds water in other vertical value
+                if self.get_value(row + (-1) ^ (i), col) == question_mark:
+                    self.cells[row, col] = water
+                pass
+            i += 1
+        pass
+
     def check_boat_piece_isolation(self, row: int, col: int, boat_type: str):
         """Checks if a boat piece is isolated, returns true if it is."""
         adj_values = self.get_adjacent_values(self, row, col)
@@ -159,8 +252,27 @@ class Board:
         return self.reduce_board()
 
     def isolate_boat_piece(self, row: int, col: int, boat_type: str):
-        """"""
-        # TODO
+        """Isolates boat pieces."""
+        self.turn_diagonal_values_water(self, row, col)
+        type = boat_type.lower()
+
+        match type:
+            case "t" | "b":
+                i = 0  # to be able to differentiate
+                if type == "t":
+                    i = 1
+                self.isolate_top_bottom(self, row, col, i)
+            case "l" | "r":
+                i = 0  # to be able to differentiate
+                if type == "l":
+                    i = 1
+                self.isolate_left_right(self, row, col, i)
+            case "m":
+                self.isolate_middle(self, row, col)
+            case "c":
+                self.isolate_circle(row, col)
+            case other:
+                pass
         pass
 
     def find_boat_piece(self, row: int, col: int):
