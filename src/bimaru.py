@@ -80,9 +80,36 @@ class Board:
         pass
 
     def check_boat_completion(self, row: int, col: int):
-        """"""
-        # TODO
-        pass
+        """Returns boolean value true if boat is complete, false otherwise."""
+        val = self.get_value(row, col).lower()
+
+        match val:
+            case "c":
+                return True
+            case "t" | "b":
+                adj_vals = self.get_adjacent_vertical_values(row, col)
+                i = 0
+                if val == "t":
+                    i = 1
+                while adj_vals[i].lower() == "m":
+                    row += (-1) ^ i  # know if it's positive or negative direction
+                    adj_vals = self.get_adjacent_vertical_values(row, col)
+                if adj_vals[i].lower() == "b" or adj_vals[i].lower() == "t":
+                    return True
+            case "r" | "l":
+                adj_vals = self.get_adjacent_horizontal_values(row, col)
+                i = 0
+                if val == "l":
+                    i = 1
+                while adj_vals[i].lower() == "m":
+                    col += (-1) ^ i  # know if it's positive or negative direction
+                    adj_vals = self.get_adjacent_vertical_values(row, col)
+                if adj_vals[i].lower() == "r" or adj_vals[i].lower() == "l":
+                    return True
+            case other:
+                return False
+
+        return False
 
     def get_initial_state(self):
         """"""
