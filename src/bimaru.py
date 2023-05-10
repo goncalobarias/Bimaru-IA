@@ -80,9 +80,13 @@ class Board:
         )
 
     def check_boat_piece_isolation(self, row: int, col: int, boat_type: str):
-        """"""
-        # TODO
-        pass
+        """Checks if a boat piece is isolated, returns true if it is."""
+        adj_values = self.get_adjacent_values(self, row, col)
+        for val in adj_values:
+            # if value is yet to be defined piece is not isolated
+            if val == _incomp_vals[0]:
+                return False
+        return True
 
     def check_boat_completion(self, row: int, col: int):
         """Given an extreme piece of a boat it checks if it is part of a
