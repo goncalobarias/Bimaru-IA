@@ -15,7 +15,7 @@ from search import (
     recursive_best_first_search,
 )
 
-_boat_piece_vals = ("T", "t", "B", "b", "L", "l", "R", "r", "M", "m", "C", "c")
+_boat_piece_vals = ("t", "b", "l", "r", "m", "c")
 _water_vals = ("W", ".")
 _incomp_vals = ("?", "x")
 _orientation_vecs = {
@@ -172,14 +172,29 @@ class Board:
             i += 1
         pass
 
-    def check_boat_piece_isolation(self, row: int, col: int, boat_type: str):
-        """Checks if a boat piece is isolated, returns true if it is."""
-        adj_values = self.get_adjacent_values(self, row, col)
-        for val in adj_values:
-            # if value is yet to be defined piece is not isolated
-            if val == _incomp_vals[0]:
-                return False
-        return True
+    def isolate_boat_piece(self, row: int, col: int, boat_type: str):
+        """Isolates boat pieces."""
+        self.turn_diagonal_values_water(self, row, col)
+        type = boat_type.lower()
+
+        match type:
+            case "t" | "b":
+                i = 0  # to be able to differentiate
+                if type == "t":
+                    i = 1
+                self.isolate_top_bottom(self, row, col, i)
+            case "l" | "r":
+                i = 0  # to be able to differentiate
+                if type == "l":
+                    i = 1
+                self.isolate_left_right(self, row, col, i)
+            case "m":
+                self.isolate_middle(self, row, col)
+            case "c":
+                self.isolate_circle(row, col)
+            case other:
+                pass
+        pass
 
     def check_boat_completion(self, row: int, col: int):
         """Given an extreme piece of a boat it checks if it is part of a
@@ -251,29 +266,14 @@ class Board:
 
         return self.reduce_board()
 
-    def isolate_boat_piece(self, row: int, col: int, boat_type: str):
-        """Isolates boat pieces."""
-        self.turn_diagonal_values_water(self, row, col)
-        type = boat_type.lower()
-
-        match type:
-            case "t" | "b":
-                i = 0  # to be able to differentiate
-                if type == "t":
-                    i = 1
-                self.isolate_top_bottom(self, row, col, i)
-            case "l" | "r":
-                i = 0  # to be able to differentiate
-                if type == "l":
-                    i = 1
-                self.isolate_left_right(self, row, col, i)
-            case "m":
-                self.isolate_middle(self, row, col)
-            case "c":
-                self.isolate_circle(row, col)
-            case other:
-                pass
-        pass
+    def check_boat_piece_isolation(self, row: int, col: int, boat_type: str):
+        """Checks if a boat piece is isolated, returns true if it is."""
+        adj_values = self.get_adjacent_values(self, row, col)
+        for val in adj_values:
+            # if value is yet to be defined piece is not isolated
+            if val == _incomp_vals[0]:
+                return False
+        return True
 
     def find_boat_piece(self, row: int, col: int):
         """"""
@@ -284,34 +284,59 @@ class Board:
     def reduce_board(self):
         """"""
 
-        # TODO: traverse the rows while "cleaning" them and isolating boat
-        # pieces
-
-        # TODO: traverse the cols while "cleaning" them and finding the boat
-        # pieces
+        # TODO: traverse the whole board and clean each row and column
 
         return self
 
     def get_placements_for_boat(self, size: int):
         """"""
-        # TODO
-        pass
 
-    def is_placement_valid(self, row: int, col: int, size: int, orientation: str):
-        """Checks if a placement is valid. It has to add a boat in a position
-        such that it won't touch another boat diagonally, vertically or
-        horizontally. It also has to respect the column and row constraints."""
-        # TODO: Use check_boat_piece_isolation to make sure no boats are around
-        # any of its pieces. Has to make sure the constraints are met on each
-        # col/row. Has to make sure the boat doesn't surprass the counter.
-        pass
+        def is_placement_valid(self, row: int, col: int, size: int, orientation: str):
+            """Checks if a placement is valid. It has to add a boat in a position
+            such that it won't touch another boat diagonally, vertically or
+            horizontally. It also has to respect the column and row constraints.
+            """
+            # TODO: Use check_boat_piece_isolation to make sure no boats are around
+            # any of its pieces. Has to make sure the constraints are met on each
+            # col/row. Has to make sure the boat doesn't surprass the counter.
+            pass
+
+        placements = ()
+        for diag in range(self.size):
+            if self.rows_fixed_num[diag] - self.rows_boat_pieces_num[diag] >= size:
+                for col in range(self.size - size):
+                    if is_placement_valid(diag, col, size, "L"):
+                        placements += ((diag, col, size, "L"),)
+
+            if self.cols_fixed_num[diag] - self.cols_boat_pieces_num[diag] >= size:
+                for row in range(self.size - size):
+                    if is_placement_valid(row, diag, size, "T"):
+                        placements += ((row, diag, size, "T"),)
+
+        return placements
 
     def place_boat(self, row: int, col: int, size: int, orientation: str):
         """Returns a new board that results from placing the given boat in the
         valid position. In order to be valid the is_placement_valid function
         must return True for the given placement/position."""
-        # TODO: Has to decrease the boat counter for the given size.
-        return Board(self.cells, self.rows_fixed_num, self.cols_fixed_num).reduce_board
+        new_cells = [[val for val in self.cells[row]] for row in range(self.size)]
+
+        new_rows_fixed_num = self.rows_fixed_num.copy()
+        new_cols_fixed_num = self.cols_fixed_num.copy()
+        d_row, d_col, _ = _orientation_vecs[orientation]
+        for _ in range(size):
+            new_rows_fixed_num[row] -= 1
+            new_cols_fixed_num[col] -= 1
+            row += d_row
+            col += d_col
+
+        new_board = Board(new_cells, new_rows_fixed_num, new_cols_fixed_num)
+
+        new_board.remaining_cells_num = self.remaining_cells_num - size
+        new_board.boats_distribution = self.boats_distribution.copy()
+        new_board.boats_distribution[size] -= 1
+
+        return new_board.reduce_board()
 
     def is_board_complete(self):
         """Checks if the board is a valid solution to the puzzle. For a
@@ -323,7 +348,7 @@ class Board:
 
         for row, row_num in enumerate(self.rows_fixed_num):
             if self.rows_boat_pieces_num[row] != row_num or any(
-                incomp_val in _incomp_vals for incomp_val in self.get_row(row)
+                val in _incomp_vals for val in self.get_row(row)
             ):
                 return False
         for col, col_num in enumerate(self.cols_fixed_num):
@@ -354,7 +379,7 @@ class Board:
         for _ in range(hint_total):
             hint = stdin.readline().strip("\n").split("\t")[1:]
             hint_row, hint_col = int(hint[0]), int(hint[1])
-            cells[hint_row][hint_col] = hint[2]
+            cells[hint_row][hint_col] = hint[2]  # inserts the hint into the board
 
         return Board(cells, rows_fixed_num, cols_fixed_num).get_initial_state()
 
@@ -390,12 +415,12 @@ class Bimaru(Problem):
     def actions(self, state: BimaruState):
         """Returns a list of actions that can be performed from
         from the state passed as an argument."""
-        if state.board.remaining_cells_num == 0 or state.board.is_invalid:
-            return []
+        if state.board.is_invalid or state.board.remaining_cells_num == 0:
+            return ()
 
         for next_size in reversed(range(4 + 1)):
             if next_size == 0:
-                return []
+                return ()
             if self.boats_distribution[next_size] != 0:
                 break
 
@@ -416,8 +441,7 @@ class Bimaru(Problem):
 
     def h(self, node: Node):
         """Heuristic function used for informed searches."""
-        # TODO: não faço ideia o que usar como heurística ngl
-        pass
+        return node.state.board.remaining_cells_num
 
 
 if __name__ == "__main__":
