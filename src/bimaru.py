@@ -17,8 +17,13 @@ from search import (
 
 _boat_piece_vals = ("T", "t", "B", "b", "L", "l", "R", "r", "M", "m", "C", "c")
 _water_vals = ("W", ".")
-_boat_piece_extreme_vals = ("T", "t", "L", "l", "C", "c")
 _incomp_vals = ("?", "x")
+_orientation_vecs = {
+    "t": (1, 0, "b"),
+    "b": (-1, 0, "t"),
+    "l": (0, 1, "r"),
+    "r": (0, -1, "l"),
+}
 
 
 class Board:
@@ -45,12 +50,12 @@ class Board:
         """Returns the given column in the board."""
         return tuple(self.cells[row][col] for row in range(self.size))
 
-    def get_adjacent_vertical_values(self, row: int, col: int) -> (str, str):
+    def get_adjacent_vertical_values(self, row: int, col: int):
         """Returns the values immediately above and below,
         respectively."""
         return (self.get_value(row - 1, col), self.get_value(row + 1, col))
 
-    def get_adjacent_horizontal_values(self, row: int, col: int) -> (str, str):
+    def get_adjacent_horizontal_values(self, row: int, col: int):
         """Returns the values immediately to the left and right,
         respectively."""
         return (self.get_value(row, col - 1), self.get_value(row, col + 1))
@@ -80,36 +85,24 @@ class Board:
         pass
 
     def check_boat_completion(self, row: int, col: int):
-        """Returns boolean value true if boat is complete, false otherwise."""
+        """Given an extreme piece of a boat it checks if it is part of a
+        complete boat by finding the other extreme piece. If it discovers a
+        boat it updates the counter with the number of boats available."""
         val = self.get_value(row, col).lower()
+        if val in _incomp_vals or val == "m":
+            return  # if it's a middle boat piece we don't know the orientation
+        if val == "c":
+            self.boats_distribution[1] -= 1  # it's a submarine that has size 1
+            return
+        d_row, d_col, other_extreme = _orientation_vecs[val]
 
-        match val:
-            case "c":
-                return True
-            case "t" | "b":
-                adj_vals = self.get_adjacent_vertical_values(row, col)
-                i = 0
-                if val == "t":
-                    i = 1
-                while adj_vals[i].lower() == "m":
-                    row += (-1) ^ i  # know if it's positive or negative direction
-                    adj_vals = self.get_adjacent_vertical_values(row, col)
-                if adj_vals[i].lower() == "b" or adj_vals[i].lower() == "t":
-                    return True
-            case "r" | "l":
-                adj_vals = self.get_adjacent_horizontal_values(row, col)
-                i = 0
-                if val == "l":
-                    i = 1
-                while adj_vals[i].lower() == "m":
-                    col += (-1) ^ i  # know if it's positive or negative direction
-                    adj_vals = self.get_adjacent_vertical_values(row, col)
-                if adj_vals[i].lower() == "r" or adj_vals[i].lower() == "l":
-                    return True
-            case other:
-                return False
-
-        return False
+        size = 2  # every other boat has two extremes besides the submarine
+        while self.get_value(row + d_row, col + d_col).lower() == "m":
+            row += d_row
+            col += d_col
+            size += 1
+        if self.get_value(row + d_row, col + d_col).lower() == other_extreme:
+            self.boats_distribution[size] -= 1
 
     def get_initial_state(self):
         """"""
@@ -130,8 +123,8 @@ class Board:
             boat_pieces_num, water_num = 0, 0
             for col in range(self.size):
                 val = self.get_value(row, col)
-                if val in _boat_piece_vals:
-                    self.check_boat_piece_isolation(row, col, val)
+                if val.lower() in _boat_piece_vals:
+                    self.isolate_boat_piece(row, col, val)
                     boat_pieces_num += 1
                 elif val in _water_vals:
                     water_num += 1
@@ -147,9 +140,8 @@ class Board:
         for col in range(self.size):
             boat_pieces_num, water_num = 0, 0
             for row in range(self.size):
-                if self.get_value(row, col) in _boat_piece_vals:
-                    if self.get_value(row, col) in _boat_piece_extreme_vals:
-                        self.check_boat_completion(row, col)
+                if self.get_value(row, col).lower() in _boat_piece_vals:
+                    self.check_boat_completion(row, col)
                     boat_pieces_num += 1
                 elif self.get_value(row, col) in _water_vals:
                     water_num += 1
