@@ -111,7 +111,6 @@ class Board:
         ):
             return False
 
-        boat_type = boat_type.lower()
         touching_adjacents = self.get_adjacent_touching_values(row, col)
         if boat_type in ("t", "r", "b", "l"):
             d_row, d_col, other_extreme = self.orientation_vecs[boat_type]
@@ -131,7 +130,16 @@ class Board:
         elif boat_type == "c":
             if any(val in self.boat_piece_vals for val in touching_adjacents):
                 return False
-        elif boat_type in ("m", "x"):
+        elif boat_type == "m":
+            if sum(val in self.water_vals for val in touching_adjacents) >= 3:
+                return False
+            for i in range(3):
+                if (
+                    touching_adjacents[i] in self.water_vals
+                    and touching_adjacents[i + 1] in self.water_vals
+                ):
+                    return False
+        elif boat_type == "x":
             for i in range(3):
                 if (
                     touching_adjacents[i] in self.boat_piece_vals
@@ -164,7 +172,9 @@ class Board:
                 touching_adjacent in self.water_vals and (i == 1 or i == 3)
             ):
                 self.set_adjacent_touching_values(row, col, "x", ".", "x", ".")
-            else:
+            elif (touching_adjacent in self.boat_piece_vals and (i == 1 or i == 3)) or (
+                touching_adjacent in self.water_vals and (i == 0 or i == 2)
+            ):
                 self.set_adjacent_touching_values(row, col, ".", "x", ".", "x")
 
     def check_boat_completion(self, row: int, col: int):
@@ -270,10 +280,10 @@ class Board:
                         self.set_value(row, diag, ".")
             for row in range(self.size):
                 for col in range(self.size):
-                    if self.get_value(row, col) == "x":
-                        self.find_boat_piece(row, col)
                     if self.get_value(row, col) in self.boat_piece_vals:
                         self.isolate_boat_piece(row, col, self.get_value(row, col))
+                    if self.get_value(row, col) == "x":
+                        self.find_boat_piece(row, col)
         return self
 
     def get_placements_for_boat(self, size: int):
@@ -452,7 +462,7 @@ class Bimaru(Problem):
         """Returns a list of actions that can be performed from
         from the state passed as an argument."""
         if state.board.__repr__ in black_list:
-            state.board.is_invalid = True
+            return ()
         if state.board.is_invalid or sum(state.board.boats_distribution) == 0:
             return ()
         black_list.add(state.board.__repr__)
