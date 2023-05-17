@@ -16,7 +16,7 @@ from search import (
 )
 
 boat_piece_vals = ("t", "b", "l", "r", "c", "m", "x")
-water_vals = ("W", ".")
+water_vals = ("w", ".")
 incomp_vals = ("?", "x")
 orientation_vecs = {
     "t": (1, 0, "b"),
@@ -44,7 +44,9 @@ class Board:
             return self.cells[row][col].lower()
 
     def set_value(self, row: int, col: int, val: str, override=False, count=True):
-        """Sets the value in the respective board position."""
+        """Sets the value in the respective board position.
+        If the override flag is active, it replaces the value at that position.
+        If the count flag is inactive, it doesn't count the piece inserted."""
         if (
             0 <= row < self.size
             and 0 <= col < self.size
@@ -89,14 +91,13 @@ class Board:
     def set_adjacent_diagonal_values(
         self, row: int, col: int, tl: str, tr: str, bl: str, br: str
     ):
-        """Sets the diagonal values to the values it receives."""
         self.set_value(row - 1, col - 1, tl)
         self.set_value(row - 1, col + 1, tr)
         self.set_value(row + 1, col + 1, br)
         self.set_value(row + 1, col - 1, bl)
 
     def check_boat_piece_isolation(self, row: int, col: int, boat_type: str):
-        """Checks if a boat piece is isolated."""
+        """"""
         if any(
             val in boat_piece_vals
             for val in self.get_adjacent_diagonal_values(row, col)
@@ -144,7 +145,7 @@ class Board:
         return True
 
     def isolate_boat_piece(self, row: int, col: int, boat_type: str):
-        """Isolates boat pieces."""
+        """"""
         if not self.check_boat_piece_isolation(row, col, boat_type):
             self.is_invalid = True
             return
@@ -291,8 +292,7 @@ class Board:
     def is_placement_valid(self, row: int, col: int, size: int, orientation: str):
         """Checks if a placement is valid. It has to add a boat in a position
         such that it won't touch another boat diagonally, vertically or
-        horizontally. It also has to respect the column and row constraints.
-        """
+        horizontally. It also has to respect the column and row constraints."""
         d_row, d_col, other_extreme = orientation_vecs[orientation]
         i_row, i_col = row, col
         count = 0
