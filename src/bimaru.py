@@ -5,6 +5,7 @@
 #   102624 Raquel Braunschweig
 
 from sys import stdin
+import numpy as np
 from search import (
     Problem,
     Node,
@@ -15,15 +16,44 @@ from search import (
     recursive_best_first_search,
 )
 
-boat_piece_vals = ("t", "b", "l", "r", "c", "m", "x")
-water_vals = ("w", ".")
-incomp_vals = ("?", "x")
+boat_piece_vals = (0, 1, 2, 3, 4, 5, 6)
+water_vals = (8, 9)
+incomp_vals = (7, 6)
+
 orientation_vecs = {
-    "t": (1, 0, "b"),
-    "b": (-1, 0, "t"),
-    "l": (0, 1, "r"),
-    "r": (0, -1, "l"),
-    "c": (0, 0, "c"),
+    0: (1, 0, 1),
+    1: (-1, 0, 0),
+    2: (0, 1, 3),
+    3: (0, -1, 2),
+    4: (0, 0, 4),
+}
+
+TOP_PIECE = 0
+BOTTOM_PIECE = 1
+LEFT_PIECE = 2
+RIGHT_PIECE = 3
+CENTER_PIECE = 4
+MIDDLE_PIECE = 5
+
+PLACED_UNKOWN_PIECE = 6
+QUESTION_MARK = 7
+
+PRE_PLACED_WATER = 8
+WATER = 9
+
+idk = ("t", "b", "l", "r", "c", "m", "x", "?", "w", ".")
+
+boat_piece_as_nums = {
+  "t": 0,
+  "b": 1,
+  "l": 2,
+  "r": 3,
+  "c": 4,
+  "m": 5,
+  "x": 6,
+  "?": 7,
+  "w": 8,
+  ".": 9,  
 }
 
 
@@ -41,7 +71,7 @@ class Board:
     def get_value(self, row: int, col: int):
         """Returns the value in the respective board position."""
         if 0 <= row < self.size and 0 <= col < self.size:
-            return self.cells[row][col].lower()
+            return self.cells[row][col]
 
     def set_value(self, row: int, col: int, val: str, override=False, count=True):
         """Sets the value in the respective board position.
@@ -50,7 +80,7 @@ class Board:
         if (
             0 <= row < self.size
             and 0 <= col < self.size
-            and ((not override and self.get_value(row, col) == "?") or override)
+            and ((not override and self.get_value(row, col) == QUESTION_MARK) or override)
         ):
             self.cells[row][col] = val
             if count:
@@ -105,12 +135,12 @@ class Board:
             return False
 
         touching_adjacents = self.get_adjacent_touching_values(row, col)
-        if boat_type in ("t", "r", "b", "l"):
+        if boat_type in (TOP_PIECE, RIGHT_PIECE, BOTTOM_PIECE, LEFT_PIECE):
             d_row, d_col, other_extreme = orientation_vecs[boat_type]
             if self.get_value(row + d_row, col + d_col) not in (
-                "?",
-                "x",
-                "m",
+                QUESTION_MARK,
+                PLACED_UNKOWN_PIECE,
+                MIDDLE_PIECE,
                 other_extreme,
             ):
                 return False
@@ -120,10 +150,10 @@ class Board:
                 return False
             if self.get_value(row - d_col, col - d_row) in boat_piece_vals:
                 return False
-        elif boat_type == "c":
+        elif boat_type == CENTER_PIECE:
             if any(val in boat_piece_vals for val in touching_adjacents):
                 return False
-        elif boat_type == "m":
+        elif boat_type == MIDDLE_PIECE:
             if sum(val in water_vals for val in touching_adjacents) >= 3:
                 return False
             for i in range(3):
@@ -135,7 +165,7 @@ class Board:
                     and touching_adjacents[i + 1] in boat_piece_vals
                 ):
                     return False
-        elif boat_type == "x":
+        elif boat_type == PLACED_UNKOWN_PIECE:
             for i in range(3):
                 if (
                     touching_adjacents[i] in boat_piece_vals
@@ -144,54 +174,54 @@ class Board:
                     return False
         return True
 
-    def isolate_boat_piece(self, row: int, col: int, boat_type: str):
+    def isolate_boat_piece(self, row: int, col: int, boat_type: int):
         """"""
         if not self.check_boat_piece_isolation(row, col, boat_type):
             self.is_invalid = True
             return
 
-        self.set_adjacent_diagonal_values(row, col, ".", ".", ".", ".")
-        if boat_type in ("t", "r", "b", "l"):
+        self.set_adjacent_diagonal_values(row, col, WATER, WATER, WATER, WATER)
+        if boat_type < 3:
             d_row, d_col, _ = orientation_vecs[boat_type]
-            self.set_value(row + d_row, col + d_col, "x")
-            self.set_adjacent_touching_values(row, col, ".", ".", ".", ".")
-        elif boat_type == "c":
-            self.set_adjacent_touching_values(row, col, ".", ".", ".", ".")
-        elif boat_type == "m":
+            self.set_value(row + d_row, col + d_col, PLACED_UNKOWN_PIECE)
+            self.set_adjacent_touching_values(row, col, WATER, WATER, WATER, WATER)
+        elif boat_type == CENTER_PIECE:
+            self.set_adjacent_touching_values(row, col, WATER, WATER, WATER, WATER)
+        elif boat_type == MIDDLE_PIECE:
             touching_adjacents = self.get_adjacent_touching_values(row, col)
-            if touching_adjacents.count("?") == 4:
+            if touching_adjacents.count(QUESTION_MARK) == 4:
                 return
             for i, touching_adjacent in enumerate(touching_adjacents):
-                if touching_adjacent != "?":
+                if touching_adjacent != QUESTION_MARK:
                     break
             if (touching_adjacent in boat_piece_vals and (i == 0 or i == 2)) or (
                 touching_adjacent in water_vals and (i == 1 or i == 3)
             ):
-                self.set_adjacent_touching_values(row, col, "x", ".", "x", ".")
+                self.set_adjacent_touching_values(row, col, PLACED_UNKOWN_PIECE, WATER, PLACED_UNKOWN_PIECE, WATER)
             elif (touching_adjacent in boat_piece_vals and (i == 1 or i == 3)) or (
                 touching_adjacent in water_vals and (i == 0 or i == 2)
             ):
-                self.set_adjacent_touching_values(row, col, ".", "x", ".", "x")
+                self.set_adjacent_touching_values(row, col, WATER, PLACED_UNKOWN_PIECE, WATER, PLACED_UNKOWN_PIECE)
 
     def check_boat_completion(self, row: int, col: int):
         """Given an extreme piece of a boat it checks if it is part of a
         complete boat by finding the other extreme piece. If it discovers a
         boat it updates the counter with the number of boats available."""
         val = self.get_value(row, col)
-        if val == "c":
+        if val == CENTER_PIECE:
             self.boats_distribution[1] -= 1  # it's a submarine that has size 1
             return
-        if val == "m" and self.get_value(row - 1, col) in boat_piece_vals:
+        if val == MIDDLE_PIECE and self.get_value(row - 1, col) in boat_piece_vals:
             d_row, d_col = -1, 0
             row, col = row + d_row, col + d_col
             val = self.get_value(row, col)
-        elif val == "m" and self.get_value(row, col - 1) in boat_piece_vals:
+        elif val == MIDDLE_PIECE and self.get_value(row, col - 1) in boat_piece_vals:
             d_row, d_col = 0, -1
             row, col = row + d_row, col + d_col
             val = self.get_value(row, col)
-        elif val == "m":
+        elif val == MIDDLE_PIECE:
             return
-        while val == "m":
+        while val == MIDDLE_PIECE:
             row += d_row
             col += d_col
             val = self.get_value(row, col)
@@ -200,7 +230,7 @@ class Board:
 
         d_row, d_col, other_extreme = orientation_vecs[val]
         size = 2  # every other boat has two extremes besides the submarine
-        while self.get_value(row + d_row, col + d_col) == "m":
+        while self.get_value(row + d_row, col + d_col) == MIDDLE_PIECE:
             row += d_row
             col += d_col
             size += 1
@@ -213,50 +243,38 @@ class Board:
     def get_initial_state(self):
         """"""
         self.boats_distribution = [0, 4, 3, 2, 1]
+        self.rows_boat_pieces_num = np.zeros(10)
+        self.rows_water_num = np.zeros(10)
+        self.cols_boat_pieces_num = np.zeros(10)
+        self.cols_water_num = np.zeros(10)
+        
+        for row in range(self.size):
+           
+          col_where_boat_in_row =  np.where(self.cells[row] < 6)
+          if np.size(col_where_boat_in_row) != 0:
+            self.rows_boat_pieces_num[row] += len(col_where_boat_in_row)
+            self.cols_boat_pieces_num[col_where_boat_in_row] +=1
+            for col in col_where_boat_in_row[0]:
+              self.isolate_boat_piece(row, col, self.get_value(row,col))
+          
+          col_where_water_in_row = np.where(self.cells[row] > 7)
+          if np.size(col_where_water_in_row) != 0:
+            self.rows_water_num[row] += len(col_where_water_in_row)
+            self.cols_water_num [col_where_water_in_row] += 1
+        
+        for row in range(self.size):
+          col_where_extreme = np.where(self.cells[row] < 5)
+          if np.size(col_where_extreme) != 0:
+            for col in col_where_extreme[0]:
+              self.check_boat_completion(row, col)
 
-        sum_rows_fixed_num = sum(self.rows_fixed_num)
-        if sum_rows_fixed_num != 20 or sum_rows_fixed_num != sum(self.cols_fixed_num):
-            # The total board has to have 20 boat pieces, no more and no less.
-            # Therefore if the constraints ask for less or more, the puzzle is
-            # invalid.
-            self.is_invalid = True
-            return self
-
-        self.rows_boat_pieces_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.rows_water_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.cols_boat_pieces_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.cols_water_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        for row in range(self.size):
-            for col in range(self.size):
-                if self.get_value(row, col) in boat_piece_vals:
-                    self.rows_boat_pieces_num[row] += 1
-                    self.cols_boat_pieces_num[col] += 1
-                elif self.get_value(row, col) in water_vals:
-                    self.rows_water_num[row] += 1
-                    self.cols_water_num[col] += 1
-                if self.cols_boat_pieces_num[col] > self.cols_fixed_num[col]:
-                    self.is_invalid = True
-                    return self  # abort immediately to save computing costs
-            if self.rows_boat_pieces_num[row] > self.rows_fixed_num[row]:
-                self.is_invalid = True
-                return self  # abort immediately to save computing costs
-        for row in range(self.size):
-            for col in range(self.size):
-                if self.get_value(row, col) in boat_piece_vals:
-                    self.isolate_boat_piece(row, col, self.get_value(row, col))
-                    if self.is_invalid:
-                        return self  # abort immediately to save computing costs
-        for row in range(self.size):
-            for col in range(self.size):
-                if self.get_value(row, col) in ("t", "l", "c"):
-                    self.check_boat_completion(row, col)
         return self.reduce_board()
 
     def find_boat_piece(self, row: int, col: int):
         """"""
-        if self.get_value(row, col) != "x":
+        if self.get_value(row, col) != PLACED_UNKOWN_PIECE:
             return
-        if "?" in self.get_adjacent_touching_values(row, col):
+        if QUESTION_MARK in self.get_adjacent_touching_values(row, col):
             return
 
         for boat_piece_val in boat_piece_vals:
@@ -272,16 +290,16 @@ class Board:
             for diag in range(self.size):
                 if self.size - self.rows_water_num[diag] == self.rows_fixed_num[diag]:
                     for col in range(self.size):
-                        self.set_value(diag, col, "x")
+                        self.set_value(diag, col, PLACED_UNKOWN_PIECE)
                 elif self.rows_boat_pieces_num[diag] == self.rows_fixed_num[diag]:
                     for col in range(self.size):
-                        self.set_value(diag, col, ".")
+                        self.set_value(diag, col, WATER)
                 if self.size - self.cols_water_num[diag] == self.cols_fixed_num[diag]:
                     for row in range(self.size):
-                        self.set_value(row, diag, "x")
+                        self.set_value(row, diag, PLACED_UNKOWN_PIECE)
                 elif self.cols_boat_pieces_num[diag] == self.cols_fixed_num[diag]:
                     for row in range(self.size):
-                        self.set_value(row, diag, ".")
+                        self.set_value(row, diag, WATER)
             for row in range(self.size):
                 for col in range(self.size):
                     if self.get_value(row, col) in boat_piece_vals:
@@ -298,7 +316,7 @@ class Board:
         count = 0
         for _ in range(size):
             val = self.get_value(i_row, i_col)
-            if val != "x" and val in boat_piece_vals:
+            if val != PLACED_UNKOWN_PIECE and val in boat_piece_vals:
                 count += 1
             i_row += d_row
             i_col += d_col
@@ -306,21 +324,21 @@ class Board:
             return False
         for i in range(size):
             if i == 0 and self.get_value(row, col) not in (
-                "?",
-                "x",
+                QUESTION_MARK,
+                PLACED_UNKOWN_PIECE,
                 orientation,
             ):
                 return False
             elif i == size - 1 and self.get_value(row, col) not in (
-                "?",
-                "x",
+                QUESTION_MARK,
+                PLACED_UNKOWN_PIECE,
                 other_extreme,
             ):
                 return False
             elif (
                 i != 0
                 and i != size - 1
-                and self.get_value(row, col) not in ("?", "x", "m")
+                and self.get_value(row, col) not in (QUESTION_MARK, PLACED_UNKOWN_PIECE, MIDDLE_PIECE)
             ):
                 return False
             if i == 0 and not self.check_boat_piece_isolation(row, col, orientation):
@@ -332,7 +350,7 @@ class Board:
             elif (
                 i != 0
                 and i != size - 1
-                and not self.check_boat_piece_isolation(row, col, "m")
+                and not self.check_boat_piece_isolation(row, col, MIDDLE_PIECE)
             ):
                 return False
             row += d_row
@@ -341,20 +359,19 @@ class Board:
 
     def get_placements_for_boat(self, size: int):
         """"""
-
         placements = ()
         for diag in range(self.size):
-            orientation = "l"
+            orientation = LEFT_PIECE
             if size == 1:
-                orientation = "c"
+                orientation = CENTER_PIECE
             if self.rows_fixed_num[diag] >= size:
                 for col in range(self.size - size + 1):
                     if self.is_placement_valid(diag, col, size, orientation):
                         placements += ((diag, col, size, orientation),)
 
-            orientation = "t"
+            orientation = TOP_PIECE
             if size == 1:
-                orientation = "c"
+                orientation = CENTER_PIECE
             if self.cols_fixed_num[diag] >= size:
                 for row in range(self.size - size + 1):
                     if self.is_placement_valid(row, diag, size, orientation):
@@ -382,10 +399,10 @@ class Board:
             elif i == size - 1:
                 boat_type = other_extreme
             else:
-                boat_type = "m"
-            if new_board.get_value(row, col) == "?":
+                boat_type = MIDDLE_PIECE
+            if new_board.get_value(row, col) == QUESTION_MARK:
                 new_board.set_value(row, col, boat_type)
-            elif new_board.get_value(row, col) == "x":
+            elif new_board.get_value(row, col) == PLACED_UNKOWN_PIECE:
                 new_board.set_value(row, col, boat_type, True, False)
             new_board.isolate_boat_piece(row, col, boat_type)
             row += d_row
@@ -431,24 +448,23 @@ class Board:
         cols_fixed_num = tuple(map(int, cols_info.split("\t")[1:]))
         board_size = len(rows_fixed_num)
 
-        cells = [["?" for _ in range(board_size)] for _ in range(board_size)]
+        cells = np.full((board_size, board_size), QUESTION_MARK)
         hint_total = int(input())
         for _ in range(hint_total):
             hint = stdin.readline().strip("\n").split("\t")[1:]
             hint_row, hint_col = int(hint[0]), int(hint[1])
-            cells[hint_row][hint_col] = hint[2]  # inserts the hint into the board
+            cells[hint_row][hint_col] = boat_piece_as_nums[hint[2].lower()]  # inserts the hint into the board
 
-        return Board(cells, rows_fixed_num, cols_fixed_num).get_initial_state()
+        return Board(cells, np.array(rows_fixed_num), np.array(cols_fixed_num)).get_initial_state()
 
     def __repr__(self):
         """External representation of a Bimaru board that follows the specified
         format."""
-        return "\n".join(map(lambda val: "".join(val), self.cells))
+        return "\n".join("".join(idk[val] for val in row) for row in self.cells)
 
 
 class BimaruState:
     """Represents the state used in the search algorithms."""
-
     state_id = 0
 
     def __init__(self, board: Board):
