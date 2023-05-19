@@ -20,6 +20,7 @@ boat_piece_vals = (0, 1, 2, 3, 4, 5, 6)
 water_vals = (8, 9)
 incomp_vals = (7, 6)
 
+
 orientation_vecs = {
     0: (1, 0, 1),
     1: (-1, 0, 0),
@@ -137,15 +138,21 @@ class Board:
             return False
 
         touching_adjacents = self.get_adjacent_touching_values(row, col)
-        if boat_type < 4:
+        if boat_type in (TOP_PIECE, RIGHT_PIECE, BOTTOM_PIECE, LEFT_PIECE):
             d_row, d_col, other_extreme = orientation_vecs[boat_type]
+            if self.get_value(row + d_row, col + d_col) not in (
+                QUESTION_MARK,
+                PLACED_UNKOWN_PIECE,
+                MIDDLE_PIECE,
+                other_extreme,
+            ):
+                return False
             if self.get_value(row - d_row, col - d_col) in boat_piece_vals:
                 return False
             if self.get_value(row + d_col, col + d_row) in boat_piece_vals:
                 return False
-            if self.get_value(row + d_row, col + d_col) != QUESTION_MARK:
+            if self.get_value(row - d_col, col - d_row) in boat_piece_vals:
                 return False
-
         elif boat_type == CENTER_PIECE:
             if any(val in boat_piece_vals for val in touching_adjacents):
                 return False
@@ -249,11 +256,11 @@ class Board:
         self.cols_water_num = np.zeros(10)
 
         for row in range(self.size):
-            col_where_boat_in_row = np.where(self.cells[row] < 6)
+            col_where_boat_in_row = np.where(self.cells[row] < 6)[0]
             if np.size(col_where_boat_in_row) != 0:
                 self.rows_boat_pieces_num[row] += len(col_where_boat_in_row)
                 self.cols_boat_pieces_num[col_where_boat_in_row] += 1
-                for col in col_where_boat_in_row[0]:
+                for col in col_where_boat_in_row:
                     self.isolate_boat_piece(row, col, self.get_value(row, col))
 
             col_where_water_in_row = np.where(self.cells[row] > 7)
@@ -285,28 +292,33 @@ class Board:
 
     def reduce_board(self):
         """"""
+
+        self.cells = np.array(self.cells)
+        for _ in range(2):
+            for i in range(self.size):
+                if self.size - self.rows_water_num[i] == self.rows_fixed_num[i]:
+                    cols_to_change_val = np.where(self.cells[i] == QUESTION_MARK)[0]
+                    if np.size(cols_to_change_val) != 0:
+                        self.cells[i, cols_to_change_val] = PLACED_UNKOWN_PIECE
+                elif self.rows_boat_pieces_num[i] == self.rows_fixed_num[i]:
+                    cols_to_change_val = np.where(self.cells[i] == QUESTION_MARK)[0]
+                    if np.size(cols_to_change_val) != 0:
+                        self.cells[i, cols_to_change_val] = WATER
+                if self.size - self.cols_water_num[i] == self.cols_fixed_num[i]:
+                    rows_to_change_val = np.where(self.cells[:, i] == QUESTION_MARK)[0]
+                    if np.size(rows_to_change_val) != 0:
+                        self.cells[rows_to_change_val, i] = PLACED_UNKOWN_PIECE
+                elif self.cols_boat_pieces_num[i] == self.cols_fixed_num[i]:
+                    rows_to_change_val = np.where(self.cells[:, i] == QUESTION_MARK)[0]
+                    if np.size(rows_to_change_val) != 0:
+                        self.cells[rows_to_change_val, i] = WATER
+
+            boat_locations = np.where(self.cells < 7)
+            row_indices, col_indices = boat_locations[0], boat_locations[1]
+            for row, col in zip(row_indices, col_indices):
+                self.isolate_boat_piece(row, col, self.get_value(row, col))
+                self.find_boat_piece(row, col)
         
-        for i in range(self.size):
-            if self.size - self.rows_water_num[i] == self.rows_fixed_num[i]:
-                cols_to_change_val = np.where(self.cells[i] == QUESTION_MARK)[0]
-                self.cells[i, cols_to_change_val] = PLACED_UNKOWN_PIECE
-            elif self.rows_boat_pieces_num[i] == self.rows_fixed_num[i]:
-                cols_to_change_val = np.where(self.cells[i] == QUESTION_MARK)[0]
-                self.cells[i, cols_to_change_val] = WATER
-            if self.size - self.cols_water_num[i] == self.cols_fixed_num[i]:
-                rows_to_change_val = np.where(self.cells[:, i] == QUESTION_MARK)[0]
-                self.cells[rows_to_change_val, i] = PLACED_UNKOWN_PIECE
-            elif self.cols_boat_pieces_num[i] == self.cols_fixed_num[i]:
-                rows_to_change_val = np.where(self.cells[:, i] == QUESTION_MARK)[0]
-                self.cells[rows_to_change_val, i] = WATER
-
-        boat_locations = np.where(self.cells < 7)
-        row_indices, col_indices = boat_locations[0], boat_locations[1]
-        for row, col in zip(row_indices, col_indices):
-            self.isolate_boat_piece(row, col, self.get_value(row, col))
-            self.find_boat_piece(row, col)
-
-        print(self.cells)
         return self
 
     def is_placement_valid(self, row: int, col: int, size: int, orientation: str):
