@@ -1,0 +1,5 @@
+ROW	4	1	0	2	2	5	1	0	0	5
+COLUMN	1	1	0	2	1	5	1	6	1	2
+2
+HINT	3	9	C
+HINT	9	6	M
