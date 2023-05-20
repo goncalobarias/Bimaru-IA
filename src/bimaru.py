@@ -18,6 +18,7 @@ from search import (
 
 grids = []
 hints = set()
+vals = {"000010010": "t", "010010000": "b", "000110000": "l", "000011000": "r"}
 
 
 class Board:
@@ -39,14 +40,14 @@ class Board:
         for size in range(1, 5):
             for row in range(10):
                 for col in range(10):
-                    # Gets the horizontal placed grids
                     if 10 - row >= size:
+                        # Gets the horizontal placed grids
                         grid = np.zeros((10, 10), dtype=int)
                         for d_row in range(size):
                             grid[row + d_row, col] = 1
                         grids.append(grid)
-                    # Gets the vertical placed grids if the size is not 1
                     if size != 1 and 10 - col >= size:
+                        # Gets the vertical placed grids if it's not a submarine
                         grid = np.zeros((10, 10), dtype=int)
                         for d_col in range(size):
                             grid[row, col + d_col] = 1
@@ -63,7 +64,21 @@ class Board:
             <hint total>
             HINT <row> <column> <hint value>
         """
-        pass
+        rows_info = stdin.readline().strip("\n")
+        rows_num = tuple(map(int, rows_info.split("\t")[1:]))
+        cols_info = stdin.readline().strip("\n")
+        cols_num = tuple(map(int, cols_info.split("\t")[1:]))
+        boats_num = [0, 4, 3, 2, 1]
+        board_size = len(rows_num)
+        cells = np.zeros((board_size, board_size), dtype=int)
+
+        hint_total = int(input())
+        for _ in range(hint_total):
+            hint = stdin.readline().strip("\n").split("\t")[1:]
+            hint[0], hint[1] = int(hint[0]), int(hint[1])
+            hints.add(hint)
+
+        return Board(cells, np.array(rows_num), np.array(cols_num), boats_num)
 
     def can_place_boat(self):
         """"""
