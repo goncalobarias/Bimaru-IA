@@ -9,6 +9,7 @@ files=$(ls ./tests/ | grep ".txt")
 
 for file in $files
 do
+  echo -n "Testing $file... "
   python ./src/bimaru.py < ./tests/$file > /tmp/bimaru.out
   output=$(cat /tmp/bimaru.out)
   output_file=$(echo $file | sed 's/txt/out/')
