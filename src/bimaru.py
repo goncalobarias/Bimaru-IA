@@ -78,7 +78,7 @@ class Board:
         for _ in range(hint_total):
             hint = stdin.readline().strip("\n").split("\t")[1:]
             hint[0], hint[1] = int(hint[0]), int(hint[1])
-            hints.add(hint)
+            hints.add(tuple(hint))
 
         return Board(cells, rows_num, cols_num, boats_num, choices)
 
@@ -113,7 +113,8 @@ class Board:
         for row, col in zip(row_i, col_i):
             for d_row in range(-1, 2):
                 for d_col in range(-1, 2):
-                    augmented_grid[row + d_row, col + d_col] = 1
+                    if 0 <= row + d_row < self.size and 0 <= col + d_col < self.size:
+                        augmented_grid[row + d_row, col + d_col] = 1
         if np.count_nonzero(augmented_grid & self.cells) != 0:
             return False
         return self.check_hints()
