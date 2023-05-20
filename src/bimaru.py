@@ -83,8 +83,9 @@ class Board:
         return Board(cells, rows_num, cols_num, boats_num, choices)
 
     def get_adjacent_values(self, row: int, col: int):
-        """"""
-        pass
+        """Gets adjacent values of a certain position (row,col)"""
+        padded_cells = np.pad(self.cells, ((1, 1), (1, 1)), mode='constant')
+        return padded_cells[row-1:row+2, col-1:col+2].ravel()
 
     def check_hints(self):
         """"""
