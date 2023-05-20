@@ -84,8 +84,8 @@ class Board:
 
     def get_adjacent_values(self, row: int, col: int):
         """Gets adjacent values of a certain position (row,col)"""
-        padded_cells = np.pad(self.cells, ((1, 1), (1, 1)), mode='constant')
-        return padded_cells[row-1:row+2, col-1:col+2].ravel()
+        padded_cells = np.pad(self.cells, ((1, 1), (1, 1)), mode="constant")
+        return padded_cells[row - 1 : row + 2, col - 1 : col + 2].ravel()
 
     def check_hints(self):
         """"""
@@ -107,7 +107,15 @@ class Board:
         cols_diff = self.cols_num - np.sum(grid, axis=1)
         if any(num < 0 for num in rows_diff) or any(num < 0 for num in cols_diff):
             return False
-        # TODO: Check if no one is around the 1's on the boat grid
+        augmented_grid = grid.copy()
+        pos_with_ones = np.where(grid == 1)
+        row_i, col_i = pos_with_ones[0], pos_with_ones[1]
+        for row, col in zip(row_i, col_i):
+            for d_row in range(-1, 2):
+                for d_col in range(-1, 2):
+                    augmented_grid[row + d_row, col + d_col] = 1
+        if np.count_nonzero(augmented_grid & self.cells) != 0:
+            return False
         return self.check_hints()
 
     def place_boat(self, action):
