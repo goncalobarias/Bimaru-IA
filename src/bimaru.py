@@ -86,18 +86,8 @@ class Board:
         """"""
         pass
 
-    def can_place_boat(self, grid):
+    def check_hints(self):
         """"""
-        pass
-
-    def place_boat(self, action):
-        """"""
-        pass
-
-    def is_board_complete(self):
-        """"""
-        if sum(self.boats_num) != 0:
-            return False
         for hint in hints:
             if hint[2] == "W" and self.cells[hint[0], hint[1]] != 0:
                 return False
@@ -109,7 +99,25 @@ class Board:
                 return False
             if ones == 2 and hint[2].lower() != vals["".join(adj)]:
                 return False
-        return True
+
+    def can_place_boat(self, grid):
+        """"""
+        rows_diff = self.rows_num - np.sum(grid, axis=0)
+        cols_diff = self.cols_num - np.sum(grid, axis=1)
+        if any(num < 0 for num in rows_diff) or any(num < 0 for num in cols_diff):
+            return False
+        # TODO: Check if no one is around the 1's on the boat grid
+        return self.check_hints()
+
+    def place_boat(self, action):
+        """"""
+        pass
+
+    def is_board_complete(self):
+        """"""
+        if sum(self.boats_num) != 0:
+            return False
+        return self.check_hints()
 
     def __repr__(self):
         """External representation of a Bimaru board that follows the specified
@@ -162,6 +170,7 @@ class Bimaru(Problem):
         """Returns a list of actions that can be performed from
         from the state passed as an argument."""
         next_grid = len(state.board.choices)
+        # TODO: might be able to skip a few grids if the last choice was 1
         if next_grid == len(grids):
             return ()
         if state.board.can_place_boat(grids[next_grid]):
