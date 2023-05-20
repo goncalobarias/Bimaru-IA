@@ -38,7 +38,7 @@ class Board:
         """Generates all the possible grids for each size of boat. A grid
         consists of a single boat (size 1 to 4) placed horizontally or
         vertically."""
-        for size in range(1, 5):
+        for size in reversed(range(1, 5)):
             for row in range(10):
                 for col in range(10):
                     if 10 - row >= size:
@@ -85,13 +85,14 @@ class Board:
     def get_adjacent_values(self, row: int, col: int):
         """Gets adjacent values of a certain position (row, col) and pads them."""
         padded_cells = np.pad(self.cells, ((1, 1), (1, 1)), mode="constant")
-        return padded_cells[row: row + 3, col: col + 3].ravel()
+        return padded_cells[row : row + 3, col : col + 3].ravel()
 
     def check_hints(self):
         """"""
-        
         for hint in hints:
-            if hint[2] == "W" and self.cells[hint[0], hint[1]] != 0:
+            if self.cells[hint[0], hint[1]] == 0 and hint[2] == "W":
+                continue
+            if self.cells[hint[0], hint[1]] == 0 and hint[2] != "W":
                 return False
             adj = self.get_adjacent_values(hint[0], hint[1])
             ones = np.count_nonzero(adj)
@@ -99,14 +100,16 @@ class Board:
                 return False
             if ones == 3 and hint[2] != "M":
                 return False
-            if ones == 2 and hint[2].lower() != vals["".join(adj)]:
+            if ones == 2 and hint[2].lower() != vals["".join(map(str, adj))]:
                 return False
         return True
-    
+
     def can_place_boat(self, grid):
         """"""
-        rows_diff = self.rows_num - np.sum(grid, axis=0)
-        cols_diff = self.cols_num - np.sum(grid, axis=1)
+        if self.boats_num[np.count_nonzero(grid)] <= 0:
+            return False
+        rows_diff = self.rows_num - np.sum(grid, axis=1)
+        cols_diff = self.cols_num - np.sum(grid, axis=0)
         if any(num < 0 for num in rows_diff) or any(num < 0 for num in cols_diff):
             return False
         augmented_grid = grid.copy()
@@ -123,37 +126,29 @@ class Board:
 
     def place_boat(self, action):
         """Places boat in the grid."""
-
         if action == 0:
             return Board(
                 self.cells,
                 self.rows_num,
                 self.cols_num,
                 self.boats_num,
-                np.append(self.choices, action),
+                self.choices + (action,),
             )
 
         grid_to_add = grids[len(self.choices)]
-
-        new_cells = np.add(self.cells, grid_to_add)
-        new_rows_num = self.rows_num - np.sum(grid_to_add, axis=0)
-        new_cols_num = self.cols_num - np.sum(grid_to_add, axis=1)
         new_boats_num = self.boats_num.copy()
-        new_boats_num[np.sum(grid_to_add)] -= 1
-
+        new_boats_num[np.count_nonzero(grid_to_add)] -= 1
         return Board(
-            new_cells,
-            new_rows_num,
-            new_cols_num,
+            self.cells + grid_to_add,
+            self.rows_num - np.sum(grid_to_add, axis=1),
+            self.cols_num - np.sum(grid_to_add, axis=0),
             new_boats_num,
-            np.append(self.choices, action),
+            self.choices + (action,),
         )
 
     def is_board_complete(self):
         """"""
-        if sum(self.boats_num) != 0:
-            return False
-        return self.check_hints()
+        return sum(self.boats_num) == 0 and self.check_hints()
 
     def __repr__(self):
         """External representation of a Bimaru board that follows the specified
@@ -171,7 +166,7 @@ class Board:
                 elif ones == 3:
                     board_repr[row][col] = "m"
                 else:
-                    board_repr[row][col] = vals["".join(adj)]
+                    board_repr[row][col] = vals["".join(map(str, adj))]
         for hint in hints:
             board_repr[hint[0]][hint[1]] = hint[2]
         return "\n".join(map(lambda vals: "".join(vals), board_repr))
@@ -227,7 +222,7 @@ class Bimaru(Problem):
 
     def h(self, node: Node):
         """Heuristic function used for informed searches."""
-        return sum(node.state.board.boats_num)
+        return sum(node.state.board.rows_num) + sum(node.state.board.cols_num)
 
 
 if __name__ == "__main__":
@@ -238,5 +233,5 @@ if __name__ == "__main__":
     Board.generate_grids()
     board = Board.parse_instance()
     bimaru = Bimaru(board)
-    goal_node = astar_search(bimaru)
+    goal_node = breadth_first_tree_search(bimaru)
     print(goal_node.state.board)
