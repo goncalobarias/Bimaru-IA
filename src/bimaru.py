@@ -24,12 +24,13 @@ vals = {"000010010": "t", "010010000": "b", "000110000": "l", "000011000": "r"}
 class Board:
     """Internal representation of a Bimaru board."""
 
-    def __init__(self, cells, rows_num, cols_num, boats_num):
+    def __init__(self, cells, rows_num, cols_num, boats_num, choices):
         """The board consists of cells with initial constraints."""
         self.cells = cells
         self.rows_num = rows_num
         self.cols_num = cols_num
         self.boats_num = boats_num
+        self.choices = choices
         self.size = len(cells)
 
     @staticmethod
@@ -65,10 +66,11 @@ class Board:
             HINT <row> <column> <hint value>
         """
         rows_info = stdin.readline().strip("\n")
-        rows_num = tuple(map(int, rows_info.split("\t")[1:]))
+        rows_num = np.array(tuple(map(int, rows_info.split("\t")[1:])))
         cols_info = stdin.readline().strip("\n")
-        cols_num = tuple(map(int, cols_info.split("\t")[1:]))
+        cols_num = np.array(tuple(map(int, cols_info.split("\t")[1:])))
         boats_num = [0, 4, 3, 2, 1]
+        choices = ()
         board_size = len(rows_num)
         cells = np.zeros((board_size, board_size), dtype=int)
 
@@ -78,24 +80,57 @@ class Board:
             hint[0], hint[1] = int(hint[0]), int(hint[1])
             hints.add(hint)
 
-        return Board(cells, np.array(rows_num), np.array(cols_num), boats_num)
+        return Board(cells, rows_num, cols_num, boats_num, choices)
 
-    def can_place_boat(self):
+    def get_adjacent_values(self, row: int, col: int):
         """"""
         pass
 
-    def place_boat(self):
+    def can_place_boat(self, grid):
+        """"""
+        pass
+
+    def place_boat(self, action):
         """"""
         pass
 
     def is_board_complete(self):
         """"""
-        pass
+        if sum(self.boats_num) != 0:
+            return False
+        for hint in hints:
+            if hint[2] == "W" and self.cells[hint[0], hint[1]] != 0:
+                return False
+            adj = self.get_adjacent_values(hint[0], hint[1])
+            ones = np.count_nonzero(adj)
+            if ones == 1 and hint[2] != "C":
+                return False
+            if ones == 3 and hint[2] != "M":
+                return False
+            if ones == 2 and hint[2].lower() != vals["".join(adj)]:
+                return False
+        return True
 
     def __repr__(self):
         """External representation of a Bimaru board that follows the specified
         format."""
-        pass
+        board_repr = self.cells.tolist()
+        for row in range(self.size):
+            for col in range(self.size):
+                if self.cells[row, col] == 0:
+                    board_repr[row][col] = "."
+                    continue
+                adj = self.get_adjacent_values(row, col)
+                ones = np.count_nonzero(adj)
+                if ones == 1:
+                    board_repr[row][col] = "c"
+                elif ones == 3:
+                    board_repr[row][col] = "m"
+                else:
+                    board_repr[row][col] = vals["".join(adj)]
+        for hint in hints:
+            board_repr[hint[0]][hint[1]] = hint[2]
+        return "\n".join(map(lambda vals: "".join(vals), board_repr))
 
 
 class BimaruState:
@@ -126,13 +161,18 @@ class Bimaru(Problem):
     def actions(self, state: BimaruState):
         """Returns a list of actions that can be performed from
         from the state passed as an argument."""
-        pass
+        next_grid = len(state.board.choices)
+        if next_grid == len(grids):
+            return ()
+        if state.board.can_place_boat(grids[next_grid]):
+            return (0, 1)
+        return (0,)
 
     def result(self, state: BimaruState, action):
         """Returns the state obtained by executing the 'action' on the
         'state' passed as an argument. The action to execute must be one
         present in the list obtained by executing self.actions(state)."""
-        pass
+        return BimaruState(state.board.place_boat(action))
 
     def goal_test(self, state: BimaruState):
         """Returns True if and only if the state passed as an argument is
