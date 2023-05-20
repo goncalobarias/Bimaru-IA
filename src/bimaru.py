@@ -85,10 +85,11 @@ class Board:
     def get_adjacent_values(self, row: int, col: int):
         """Gets adjacent values of a certain position (row, col) and pads them."""
         padded_cells = np.pad(self.cells, ((1, 1), (1, 1)), mode="constant")
-        return padded_cells[row - 1 : row + 2, col - 1 : col + 2].ravel()
+        return padded_cells[row: row + 3, col: col + 3].ravel()
 
     def check_hints(self):
         """"""
+        
         for hint in hints:
             if hint[2] == "W" and self.cells[hint[0], hint[1]] != 0:
                 return False
@@ -100,7 +101,8 @@ class Board:
                 return False
             if ones == 2 and hint[2].lower() != vals["".join(adj)]:
                 return False
-
+        return True
+    
     def can_place_boat(self, grid):
         """"""
         rows_diff = self.rows_num - np.sum(grid, axis=0)
