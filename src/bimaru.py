@@ -83,7 +83,7 @@ class Board:
         return Board(cells, rows_num, cols_num, boats_num, choices)
 
     def get_adjacent_values(self, row: int, col: int):
-        """Gets adjacent values of a certain position (row,col)"""
+        """Gets adjacent values of a certain position (row, col) and pads them."""
         padded_cells = np.pad(self.cells, ((1, 1), (1, 1)), mode="constant")
         return padded_cells[row - 1 : row + 2, col - 1 : col + 2].ravel()
 
@@ -119,8 +119,32 @@ class Board:
         return self.check_hints()
 
     def place_boat(self, action):
-        """"""
-        pass
+        """Places boat in the grid."""
+
+        if action == 0:
+            return Board(
+                self.cells,
+                self.rows_num,
+                self.cols_num,
+                self.boats_num,
+                np.append(self.choices, action),
+            )
+
+        grid_to_add = grids[len(self.choices)]
+
+        new_cells = np.add(self.cells, grid_to_add)
+        new_rows_num = self.rows_num - np.sum(grid_to_add, axis=0)
+        new_cols_num = self.cols_num - np.sum(grid_to_add, axis=1)
+        new_boats_num = self.boats_num.copy()
+        new_boats_num[np.sum(grid_to_add)] -= 1
+
+        return Board(
+            new_cells,
+            new_rows_num,
+            new_cols_num,
+            new_boats_num,
+            np.append(self.choices, action),
+        )
 
     def is_board_complete(self):
         """"""
