@@ -16,7 +16,8 @@ from search import (
     recursive_best_first_search,
 )
 
-grids = ()
+grids = []
+hints = set()
 
 
 class Board:
@@ -32,8 +33,24 @@ class Board:
 
     @staticmethod
     def generate_grids():
-        """"""
-        pass
+        """Generates all the possible grids for each size of boat. A grid
+        consists of a single boat (size 1 to 4) placed horizontally or
+        vertically."""
+        for size in range(1, 5):
+            for row in range(10):
+                for col in range(10):
+                    # Gets the horizontal placed grids
+                    if 10 - row >= size:
+                        grid = np.zeros((10, 10), dtype=int)
+                        for d_row in range(size):
+                            grid[row + d_row, col] = 1
+                        grids.append(grid)
+                    # Gets the vertical placed grids if the size is not 1
+                    if size != 1 and 10 - col >= size:
+                        grid = np.zeros((10, 10), dtype=int)
+                        for d_col in range(size):
+                            grid[row, col + d_col] = 1
+                        grids.append(grid)
 
     @staticmethod
     def parse_instance():
