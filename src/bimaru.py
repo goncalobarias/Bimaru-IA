@@ -1,9 +1,11 @@
 # File: bimaru.py
+# Description: Python program that solves the bimaru game.
 # Group 10:
 #   103124 Gonçalo Bárias
 #   102624 Raquel Braunschweig
 
-import sys
+from sys import stdin
+import numpy as np
 from search import (
     Problem,
     Node,
@@ -14,39 +16,23 @@ from search import (
     recursive_best_first_search,
 )
 
-
-class BimaruState:
-    state_id = 0
-
-    def __init__(self, board):
-        self.board = board
-        self.id = BimaruState.state_id
-        BimaruState.state_id += 1
-
-    def __lt__(self, other):
-        return self.id < other.id
-
-    # TODO: other methods of the class
+grids = ()
 
 
 class Board:
     """Internal representation of a Bimaru board."""
 
-    def get_value(self, row: int, col: int) -> str:
-        """Returns the value in the respective board position."""
-        # TODO
-        pass
+    def __init__(self, cells, rows_num, cols_num, boats_num):
+        """The board consists of cells with initial constraints."""
+        self.cells = cells
+        self.rows_num = rows_num
+        self.cols_num = cols_num
+        self.boats_num = boats_num
+        self.size = len(cells)
 
-    def adjacent_vertical_values(self, row: int, col: int) -> (str, str):
-        """Returns the values immediately above and below,
-        respectively."""
-        # TODO
-        pass
-
-    def adjacent_horizontal_values(self, row: int, col: int) -> (str, str):
-        """Returns the values immediately to the left and right,
-        respectively."""
-        # TODO
+    @staticmethod
+    def generate_grids():
+        """"""
         pass
 
     @staticmethod
@@ -54,57 +40,86 @@ class Board:
         """Reads the test from the standard input (stdin) that is passed as an
         argument and returns an instance of the Board class.
 
-        For example:
-            $ python3 bimaru.py < input_T01
-
-            > from sys import stdin
-            > line = stdin.readline().split()
+        Input format:
+            ROW <count-0> ... <count-9>
+            COLUMN <count-0> ... <count-9>
+            <hint total>
+            HINT <row> <column> <hint value>
         """
-        # TODO
         pass
 
-    # TODO: other methods of the class
+    def can_place_boat(self):
+        """"""
+        pass
+
+    def place_boat(self):
+        """"""
+        pass
+
+    def is_board_complete(self):
+        """"""
+        pass
+
+    def __repr__(self):
+        """External representation of a Bimaru board that follows the specified
+        format."""
+        pass
+
+
+class BimaruState:
+    """Represents the state used in the search algorithms."""
+
+    state_id = 0
+
+    def __init__(self, board: Board):
+        """Each state has a board and a unique identifier."""
+        self.board = board
+        self.id = BimaruState.state_id
+        BimaruState.state_id += 1
+
+    def __lt__(self, other):
+        """This method is used in case of a tie in the management of the
+        open list in the informed searches."""
+        return self.id < other.id
 
 
 class Bimaru(Problem):
+    """Implements the Problem superclass to solve the bimaru problem."""
+
     def __init__(self, board: Board):
         """The constructor specifies the initial state."""
-        # TODO
-        pass
+        state = BimaruState(board)
+        super().__init__(state)
 
     def actions(self, state: BimaruState):
         """Returns a list of actions that can be performed from
         from the state passed as an argument."""
-        # TODO
         pass
 
     def result(self, state: BimaruState, action):
         """Returns the state obtained by executing the 'action' on the
         'state' passed as an argument. The action to execute must be one
-        present in the list obtained by executing
-        self.actions(state)."""
-        # TODO
+        present in the list obtained by executing self.actions(state)."""
         pass
 
     def goal_test(self, state: BimaruState):
         """Returns True if and only if the state passed as an argument is
-        an objective state. It should check that all positions on the board
+        a goal state. It should check that all positions on the board
         are filled according to the rules of the problem."""
-        # TODO
-        pass
+        return state.board.is_board_complete()
 
     def h(self, node: Node):
-        """Heuristic function used for the A* search."""
-        # TODO
-        pass
-
-    # TODO: other methods of the class
+        """Heuristic function used for informed searches."""
+        return sum(node.state.board.boats_num)
 
 
 if __name__ == "__main__":
-    # TODO:
-    # Read the standard input file,
-    # Use a search technique to solve the instance,
-    # Retrieve the solution from the resulting node,
-    # Print to the standard output in the indicated format.
-    pass
+    """Read the standard input file.
+    Use a search technique to solve the instance.
+    Retrieve the solution from the resulting node.
+    Print to the standard output in the indicated format."""
+    Board.generate_grids()
+    board = Board.parse_instance()
+    bimaru = Bimaru(board)
+    goal_node = astar_search(bimaru)
+    print(goal_node.state.board)
