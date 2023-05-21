@@ -33,9 +33,9 @@ class Board:
     def __init__(self, cells, rows_fixed_num, cols_fixed_num):
         """The board consists of cells with initial constraints."""
         self.cells = cells
-        self.size = len(cells)
         self.rows_fixed_num = rows_fixed_num
         self.cols_fixed_num = cols_fixed_num
+        self.size = len(cells)
         self.is_invalid = False
 
     def get_value(self, row: int, col: int):
@@ -174,7 +174,7 @@ class Board:
                 self.set_adjacent_touching_values(row, col, ".", "x", ".", "x")
 
     def check_boat_completion(self, row: int, col: int):
-        """Given an extreme piece of a boat it checks if it is part of a
+        """Given an extreme piece of a boat, it checks if it is part of a
         complete boat by finding the other extreme piece. If it discovers a
         boat it updates the counter with the number of boats available."""
         val = self.get_value(row, col)
@@ -213,15 +213,6 @@ class Board:
     def get_initial_state(self):
         """"""
         self.boats_distribution = [0, 4, 3, 2, 1]
-
-        sum_rows_fixed_num = sum(self.rows_fixed_num)
-        if sum_rows_fixed_num != 20 or sum_rows_fixed_num != sum(self.cols_fixed_num):
-            # The total board has to have 20 boat pieces, no more and no less.
-            # Therefore if the constraints ask for less or more, the puzzle is
-            # invalid.
-            self.is_invalid = True
-            return self
-
         self.rows_boat_pieces_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.rows_water_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.cols_boat_pieces_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -234,18 +225,10 @@ class Board:
                 elif self.get_value(row, col) in water_vals:
                     self.rows_water_num[row] += 1
                     self.cols_water_num[col] += 1
-                if self.cols_boat_pieces_num[col] > self.cols_fixed_num[col]:
-                    self.is_invalid = True
-                    return self  # abort immediately to save computing costs
-            if self.rows_boat_pieces_num[row] > self.rows_fixed_num[row]:
-                self.is_invalid = True
-                return self  # abort immediately to save computing costs
         for row in range(self.size):
             for col in range(self.size):
                 if self.get_value(row, col) in boat_piece_vals:
                     self.isolate_boat_piece(row, col, self.get_value(row, col))
-                    if self.is_invalid:
-                        return self  # abort immediately to save computing costs
         for row in range(self.size):
             for col in range(self.size):
                 if self.get_value(row, col) in ("t", "l", "c"):
@@ -305,11 +288,7 @@ class Board:
         if count == size:
             return False
         for i in range(size):
-            if i == 0 and self.get_value(row, col) not in (
-                "?",
-                "x",
-                orientation,
-            ):
+            if i == 0 and self.get_value(row, col) not in ("?", "x", orientation):
                 return False
             elif i == size - 1 and self.get_value(row, col) not in (
                 "?",
@@ -341,7 +320,6 @@ class Board:
 
     def get_placements_for_boat(self, size: int):
         """"""
-
         placements = ()
         for diag in range(self.size):
             orientation = "l"
@@ -464,6 +442,8 @@ class BimaruState:
 
 
 class Bimaru(Problem):
+    """Implements the Problem superclass to solve the bimaru problem."""
+
     def __init__(self, board: Board):
         """The constructor specifies the initial state."""
         state = BimaruState(board)
@@ -498,19 +478,12 @@ class Bimaru(Problem):
 
     def h(self, node: Node):
         """Heuristic function used for informed searches."""
-        row_diff = [
-            a - b
-            for a, b in zip(
-                node.state.board.rows_fixed_num, node.state.board.rows_boat_pieces_num
-            )
-        ]
-        col_diff = [
-            a - b
-            for a, b in zip(
-                node.state.board.cols_fixed_num, node.state.board.cols_boat_pieces_num
-            )
-        ]
-        return sum(row_diff) + sum(col_diff)
+        brd = node.state.board
+        rows_diff, cols_diff = [], []
+        for i in range(node.state.board.size):
+            rows_diff.append(brd.rows_fixed_num[i] - brd.rows_boat_pieces_num[i])
+            cols_diff.append(brd.cols_fixed_num[i] - brd.cols_boat_pieces_num[i])
+        return sum(rows_diff) + sum(cols_diff)
 
 
 if __name__ == "__main__":
