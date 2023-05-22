@@ -15,6 +15,7 @@ from search import (
     recursive_best_first_search,
 )
 
+rows_fixed_num, cols_fixed_num = (), ()
 boat_piece_vals = ("t", "b", "l", "r", "c", "m", "x")
 water_vals = ("w", ".")
 incomp_vals = ("?", "x")
@@ -30,11 +31,9 @@ orientation_vecs = {
 class Board:
     """Internal representation of a Bimaru board."""
 
-    def __init__(self, cells, rows_fixed_num, cols_fixed_num):
+    def __init__(self, cells):
         """The board consists of cells with initial constraints."""
         self.cells = cells
-        self.rows_fixed_num = rows_fixed_num
-        self.cols_fixed_num = cols_fixed_num
         self.size = len(cells)
         self.is_invalid = False
 
@@ -47,19 +46,16 @@ class Board:
         """Sets the value in the respective board position.
         If the override flag is active, it replaces the value at that position.
         If the count flag is inactive, it doesn't count the piece inserted."""
-        if (
-            0 <= row < self.size
-            and 0 <= col < self.size
-            and ((not override and self.get_value(row, col) == "?") or override)
-        ):
+        if row < 0 or row >= self.size or col < 0 or col >= self.size:
+            return
+        if (not override and self.get_value(row, col) == "?") or override:
             self.cells[row][col] = val
-            if count:
-                if val in water_vals:
-                    self.rows_water_num[row] += 1
-                    self.cols_water_num[col] += 1
-                elif val in boat_piece_vals:
-                    self.rows_boat_pieces_num[row] += 1
-                    self.cols_boat_pieces_num[col] += 1
+            if count and val in water_vals:
+                self.rows_water_num[row] += 1
+                self.cols_water_num[col] += 1
+            elif count and val in boat_piece_vals:
+                self.rows_boat_pieces_num[row] += 1
+                self.cols_boat_pieces_num[col] += 1
 
     def get_adjacent_touching_values(self, row: int, col: int):
         return (
@@ -79,7 +75,7 @@ class Board:
 
     def get_adjacent_diagonal_values(self, row: int, col: int):
         """Returns the values in the two diagonals of the selected position,
-        starting from the top right diagonal positon and going
+        starting from the top left diagonal positon and going
         around clockwise."""
         return (
             self.get_value(row - 1, col - 1),
@@ -96,8 +92,89 @@ class Board:
         self.set_value(row + 1, col + 1, br)
         self.set_value(row + 1, col - 1, bl)
 
+    @staticmethod
+    def parse_instance():
+        global rows_fixed_num, cols_fixed_num
+        """Reads the test from the standard input (stdin) that is passed as an
+        argument and returns an instance of the Board class.
+
+        Input format:
+            ROW <count-0> ... <count-9>
+            COLUMN <count-0> ... <count-9>
+            <hint total>
+            HINT <row> <column> <hint value>
+        """
+        rows_info = stdin.readline().strip("\n")
+        cols_info = stdin.readline().strip("\n")
+        rows_fixed_num = tuple(map(int, rows_info.split("\t")[1:]))
+        cols_fixed_num = tuple(map(int, cols_info.split("\t")[1:]))
+        board_size = len(rows_fixed_num)
+
+        cells = [["?" for _ in range(board_size)] for _ in range(board_size)]
+        hint_total = int(input())
+        for _ in range(hint_total):
+            hint = stdin.readline().strip("\n").split("\t")[1:]
+            hint_row, hint_col = int(hint[0]), int(hint[1])
+            cells[hint_row][hint_col] = hint[2]  # inserts the hint into the board
+
+        return Board(cells).get_initial_state()
+
+    def get_initial_state(self):
+        """Initializes internal counters for boats, boat pieces and water
+        pieces. Also isolates the starting pieces."""
+        self.boats_distribution = [0, 4, 3, 2, 1]
+        self.rows_boat_pieces_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.rows_water_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.cols_boat_pieces_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.cols_water_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        for row in range(self.size):
+            for col in range(self.size):
+                if self.get_value(row, col) in boat_piece_vals:
+                    self.rows_boat_pieces_num[row] += 1
+                    self.cols_boat_pieces_num[col] += 1
+                elif self.get_value(row, col) in water_vals:
+                    self.rows_water_num[row] += 1
+                    self.cols_water_num[col] += 1
+        for row in range(self.size):
+            for col in range(self.size):
+                if self.get_value(row, col) in boat_piece_vals:
+                    self.isolate_boat_piece(row, col, self.get_value(row, col))
+        for row in range(self.size):
+            for col in range(self.size):
+                if self.get_value(row, col) in ("t", "l", "c"):
+                    self.check_boat_completion(row, col)
+        return self.reduce_board()
+
+    def reduce_board(self):
+        """Infers from the current board the pieces that can be placed by
+        scanning the board and the counters. When a row/column is already full,
+        it fills the rest with water. Also tries to find the 'x' boat pieces."""
+        for _ in range(2):
+            # We do this outer for loop because finding boat pieces could possibly
+            # let us infer more rows/columns that can be filled with water.
+            for diag in range(self.size):
+                if self.size - self.rows_water_num[diag] == rows_fixed_num[diag]:
+                    for col in range(self.size):
+                        self.set_value(diag, col, "x")
+                elif self.rows_boat_pieces_num[diag] == rows_fixed_num[diag]:
+                    for col in range(self.size):
+                        self.set_value(diag, col, ".")
+                if self.size - self.cols_water_num[diag] == cols_fixed_num[diag]:
+                    for row in range(self.size):
+                        self.set_value(row, diag, "x")
+                elif self.cols_boat_pieces_num[diag] == cols_fixed_num[diag]:
+                    for row in range(self.size):
+                        self.set_value(row, diag, ".")
+            for row in range(self.size):
+                for col in range(self.size):
+                    if self.get_value(row, col) == "x":
+                        self.isolate_boat_piece(row, col, "x")
+                        self.find_boat_piece(row, col)
+        return self
+
     def check_boat_piece_isolation(self, row: int, col: int, boat_type: str):
-        """"""
+        """Given a certain boat type, it checks if the surrounding diagonal
+        and touching adjacent positions obey the game rules."""
         if any(
             val in boat_piece_vals
             for val in self.get_adjacent_diagonal_values(row, col)
@@ -106,13 +183,9 @@ class Board:
 
         touching_adjacents = self.get_adjacent_touching_values(row, col)
         if boat_type in ("t", "r", "b", "l"):
-            d_row, d_col, other_extreme = orientation_vecs[boat_type]
-            if self.get_value(row + d_row, col + d_col) not in (
-                "?",
-                "x",
-                "m",
-                other_extreme,
-            ):
+            d_row, d_col, o_extreme = orientation_vecs[boat_type]
+            o_val = self.get_value(row + d_row, col + d_col)
+            if o_val not in ("?", "x", "m", o_extreme):
                 return False
             if self.get_value(row - d_row, col - d_col) in boat_piece_vals:
                 return False
@@ -144,8 +217,43 @@ class Board:
                     return False
         return True
 
+    def check_boat_completion(self, row: int, col: int):
+        """Given an extreme piece of a boat, it checks if it is part of a
+        complete boat by finding the other extreme piece. If it discovers a
+        boat it updates the counter with the number of boats available."""
+        val = self.get_value(row, col)
+        if val == "c":
+            self.boats_distribution[1] -= 1  # it's a submarine that has size 1
+            return
+        if val == "m" and self.get_value(row - 1, col) in boat_piece_vals:
+            d_row, d_col = -1, 0
+        elif val == "m" and self.get_value(row, col - 1) in boat_piece_vals:
+            d_row, d_col = 0, -1
+        elif val == "m":
+            return
+        while val == "m":
+            row += d_row
+            col += d_col
+            val = self.get_value(row, col)
+        if val in incomp_vals or val in water_vals:
+            return  # if it's not a boat piece we return
+
+        d_row, d_col, o_extreme = orientation_vecs[val]
+        size = 2  # every other boat has two extremes besides the submarine
+        while self.get_value(row + d_row, col + d_col) == "m":
+            row += d_row
+            col += d_col
+            size += 1
+        if size > 4:
+            self.is_invalid = True
+            return
+        if self.get_value(row + d_row, col + d_col) == o_extreme:
+            self.boats_distribution[size] -= 1
+
     def isolate_boat_piece(self, row: int, col: int, boat_type: str):
-        """"""
+        """Depending on the boat type, it isolates them according to the game
+        rules. Also checks if a boat piece is not isolated, making the
+        board invalid."""
         if not self.check_boat_piece_isolation(row, col, boat_type):
             self.is_invalid = True
             return
@@ -173,70 +281,9 @@ class Board:
             ):
                 self.set_adjacent_touching_values(row, col, ".", "x", ".", "x")
 
-    def check_boat_completion(self, row: int, col: int):
-        """Given an extreme piece of a boat, it checks if it is part of a
-        complete boat by finding the other extreme piece. If it discovers a
-        boat it updates the counter with the number of boats available."""
-        val = self.get_value(row, col)
-        if val == "c":
-            self.boats_distribution[1] -= 1  # it's a submarine that has size 1
-            return
-        if val == "m" and self.get_value(row - 1, col) in boat_piece_vals:
-            d_row, d_col = -1, 0
-            row, col = row + d_row, col + d_col
-            val = self.get_value(row, col)
-        elif val == "m" and self.get_value(row, col - 1) in boat_piece_vals:
-            d_row, d_col = 0, -1
-            row, col = row + d_row, col + d_col
-            val = self.get_value(row, col)
-        elif val == "m":
-            return
-        while val == "m":
-            row += d_row
-            col += d_col
-            val = self.get_value(row, col)
-        if val in incomp_vals or val in water_vals:
-            return  # if it's not a boat piece we return
-
-        d_row, d_col, other_extreme = orientation_vecs[val]
-        size = 2  # every other boat has two extremes besides the submarine
-        while self.get_value(row + d_row, col + d_col) == "m":
-            row += d_row
-            col += d_col
-            size += 1
-        if size > 4:
-            self.is_invalid = True
-            return
-        if self.get_value(row + d_row, col + d_col) == other_extreme:
-            self.boats_distribution[size] -= 1
-
-    def get_initial_state(self):
-        """"""
-        self.boats_distribution = [0, 4, 3, 2, 1]
-        self.rows_boat_pieces_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.rows_water_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.cols_boat_pieces_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.cols_water_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        for row in range(self.size):
-            for col in range(self.size):
-                if self.get_value(row, col) in boat_piece_vals:
-                    self.rows_boat_pieces_num[row] += 1
-                    self.cols_boat_pieces_num[col] += 1
-                elif self.get_value(row, col) in water_vals:
-                    self.rows_water_num[row] += 1
-                    self.cols_water_num[col] += 1
-        for row in range(self.size):
-            for col in range(self.size):
-                if self.get_value(row, col) in boat_piece_vals:
-                    self.isolate_boat_piece(row, col, self.get_value(row, col))
-        for row in range(self.size):
-            for col in range(self.size):
-                if self.get_value(row, col) in ("t", "l", "c"):
-                    self.check_boat_completion(row, col)
-        return self.reduce_board()
-
     def find_boat_piece(self, row: int, col: int):
-        """"""
+        """Checks if it can infer the boat piece type. If so, it finds
+        what the 'x' piece represents."""
         if "?" in self.get_adjacent_touching_values(row, col):
             return
 
@@ -247,34 +294,12 @@ class Board:
         self.set_value(row, col, boat_piece_val, True, False)
         self.check_boat_completion(row, col)
 
-    def reduce_board(self):
-        """"""
-        for _ in range(2):
-            for diag in range(self.size):
-                if self.size - self.rows_water_num[diag] == self.rows_fixed_num[diag]:
-                    for col in range(self.size):
-                        self.set_value(diag, col, "x")
-                elif self.rows_boat_pieces_num[diag] == self.rows_fixed_num[diag]:
-                    for col in range(self.size):
-                        self.set_value(diag, col, ".")
-                if self.size - self.cols_water_num[diag] == self.cols_fixed_num[diag]:
-                    for row in range(self.size):
-                        self.set_value(row, diag, "x")
-                elif self.cols_boat_pieces_num[diag] == self.cols_fixed_num[diag]:
-                    for row in range(self.size):
-                        self.set_value(row, diag, ".")
-            for row in range(self.size):
-                for col in range(self.size):
-                    if self.get_value(row, col) == "x":
-                        self.isolate_boat_piece(row, col, "x")
-                        self.find_boat_piece(row, col)
-        return self
-
     def is_placement_valid(self, row: int, col: int, size: int, orientation: str):
         """Checks if a placement is valid. It has to add a boat in a position
         such that it won't touch another boat diagonally, vertically or
-        horizontally. It also has to respect the column and row constraints."""
-        d_row, d_col, other_extreme = orientation_vecs[orientation]
+        horizontally. It also has to respect the column and row constraints
+        and have compatible hints in its positions."""
+        d_row, d_col, o_extreme = orientation_vecs[orientation]
         i_row, i_col = row, col
         count = 0
         for _ in range(size):
@@ -286,24 +311,17 @@ class Board:
         if count == size:
             return False
         for i in range(size):
-            if i == 0 and self.get_value(row, col) not in ("?", "x", orientation):
+            val = self.get_value(row, col)
+            if i == 0 and val not in ("?", "x", orientation):
                 return False
-            elif i == size - 1 and self.get_value(row, col) not in (
-                "?",
-                "x",
-                other_extreme,
-            ):
+            elif i == size - 1 and val not in ("?", "x", o_extreme):
                 return False
-            elif (
-                i != 0
-                and i != size - 1
-                and self.get_value(row, col) not in ("?", "x", "m")
-            ):
+            elif i != 0 and i != size - 1 and val not in ("?", "x", "m"):
                 return False
             if i == 0 and not self.check_boat_piece_isolation(row, col, orientation):
                 return False
             elif i == size - 1 and not self.check_boat_piece_isolation(
-                row, col, other_extreme
+                row, col, o_extreme
             ):
                 return False
             elif (
@@ -317,13 +335,14 @@ class Board:
         return True
 
     def get_placements_for_boat(self, size: int):
-        """"""
+        """Gets all the valid placements (in both orientations) for a boat of
+        a certain size."""
         placements = ()
         for diag in range(self.size):
             orientation = "l"
             if size == 1:
                 orientation = "c"
-            if self.rows_fixed_num[diag] >= size:
+            if rows_fixed_num[diag] >= size:
                 for col in range(self.size - size + 1):
                     if self.is_placement_valid(diag, col, size, orientation):
                         placements += ((diag, col, size, orientation),)
@@ -331,7 +350,7 @@ class Board:
             orientation = "t"
             if size == 1:
                 orientation = "c"
-            if self.cols_fixed_num[diag] >= size:
+            if cols_fixed_num[diag] >= size:
                 for row in range(self.size - size + 1):
                     if self.is_placement_valid(row, diag, size, orientation):
                         placements += ((row, diag, size, orientation),)
@@ -343,7 +362,7 @@ class Board:
         valid position. In order to be valid the is_placement_valid function
         must return True for the given placement/position."""
         new_cells = [[val for val in self.cells[row]] for row in range(self.size)]
-        new_board = Board(new_cells, self.rows_fixed_num, self.cols_fixed_num)
+        new_board = Board(new_cells)
 
         new_board.rows_boat_pieces_num = self.rows_boat_pieces_num.copy()
         new_board.cols_boat_pieces_num = self.cols_boat_pieces_num.copy()
@@ -351,12 +370,12 @@ class Board:
         new_board.cols_water_num = self.cols_water_num.copy()
         new_board.boats_distribution = self.boats_distribution.copy()
         new_board.boats_distribution[size] -= 1
-        d_row, d_col, other_extreme = orientation_vecs[orientation]
+        d_row, d_col, o_extreme = orientation_vecs[orientation]
         for i in range(size):
             if i == 0:
                 boat_type = orientation
             elif i == size - 1:
-                boat_type = other_extreme
+                boat_type = o_extreme
             else:
                 boat_type = "m"
             if new_board.get_value(row, col) == "?":
@@ -372,49 +391,21 @@ class Board:
     def is_board_complete(self):
         """Checks if the board is a valid solution to the puzzle. For a
         Bimaru puzzle to be complete it needs to have all the constraints in
-        the columns and rows satisfied, have zero incomplete cells to
-        fill and be a valid board."""
+        the columns and rows satisfied and be a valid board."""
         if any(num < 0 for num in self.boats_distribution):
             self.is_invalid = True
         if self.is_invalid or sum(self.boats_distribution) != 0:
             return False
 
-        for row, row_num in enumerate(self.rows_fixed_num):
-            if self.rows_boat_pieces_num[row] != row_num or any(
-                val in incomp_vals for val in self.cells[row]
-            ):
+        for row, row_num in enumerate(rows_fixed_num):
+            if self.rows_boat_pieces_num[row] != row_num:
                 return False
-        for col, col_num in enumerate(self.cols_fixed_num):
+        for col, col_num in enumerate(cols_fixed_num):
             if self.cols_boat_pieces_num[col] != col_num:
                 return False
 
+        self.reduce_board()
         return True
-
-    @staticmethod
-    def parse_instance():
-        """Reads the test from the standard input (stdin) that is passed as an
-        argument and returns an instance of the Board class.
-
-        Input format:
-            ROW <count-0> ... <count-9>
-            COLUMN <count-0> ... <count-9>
-            <hint total>
-            HINT <row> <column> <hint value>
-        """
-        rows_info = stdin.readline().strip("\n")
-        rows_fixed_num = tuple(map(int, rows_info.split("\t")[1:]))
-        cols_info = stdin.readline().strip("\n")
-        cols_fixed_num = tuple(map(int, cols_info.split("\t")[1:]))
-        board_size = len(rows_fixed_num)
-
-        cells = [["?" for _ in range(board_size)] for _ in range(board_size)]
-        hint_total = int(input())
-        for _ in range(hint_total):
-            hint = stdin.readline().strip("\n").split("\t")[1:]
-            hint_row, hint_col = int(hint[0]), int(hint[1])
-            cells[hint_row][hint_col] = hint[2]  # inserts the hint into the board
-
-        return Board(cells, rows_fixed_num, cols_fixed_num).get_initial_state()
 
     def __repr__(self):
         """External representation of a Bimaru board that follows the specified
@@ -479,8 +470,8 @@ class Bimaru(Problem):
         brd = node.state.board
         rows_diff, cols_diff = [], []
         for i in range(node.state.board.size):
-            rows_diff.append(brd.rows_fixed_num[i] - brd.rows_boat_pieces_num[i])
-            cols_diff.append(brd.cols_fixed_num[i] - brd.cols_boat_pieces_num[i])
+            rows_diff.append(rows_fixed_num[i] - brd.rows_boat_pieces_num[i])
+            cols_diff.append(cols_fixed_num[i] - brd.cols_boat_pieces_num[i])
         return sum(rows_diff) + sum(cols_diff)
 
 
