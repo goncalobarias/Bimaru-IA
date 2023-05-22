@@ -237,8 +237,6 @@ class Board:
 
     def find_boat_piece(self, row: int, col: int):
         """"""
-        if self.get_value(row, col) != "x":
-            return
         if "?" in self.get_adjacent_touching_values(row, col):
             return
 
@@ -267,8 +265,8 @@ class Board:
                         self.set_value(row, diag, ".")
             for row in range(self.size):
                 for col in range(self.size):
-                    if self.get_value(row, col) in boat_piece_vals:
-                        self.isolate_boat_piece(row, col, self.get_value(row, col))
+                    if self.get_value(row, col) == "x":
+                        self.isolate_boat_piece(row, col, "x")
                         self.find_boat_piece(row, col)
         return self
 
