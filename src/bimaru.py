@@ -42,18 +42,18 @@ class Board:
         if 0 <= row < self.size and 0 <= col < self.size:
             return self.cells[row][col].lower()
 
-    def set_value(self, row: int, col: int, val: str, override=False, count=True):
+    def set_value(self, row: int, col: int, val: str, override=False):
         """Sets the value in the respective board position.
-        If the override flag is active, it replaces the value at that position.
-        If the count flag is inactive, it doesn't count the piece inserted."""
+        If the override flag is active, it replaces the value at that position
+        and doesn't count that piece."""
         if row < 0 or row >= self.size or col < 0 or col >= self.size:
             return
         if (not override and self.get_value(row, col) == "?") or override:
             self.cells[row][col] = val
-            if count and val in water_vals:
+            if not override and val.lower() in water_vals:
                 self.rows_water_num[row] += 1
                 self.cols_water_num[col] += 1
-            elif count and val in boat_piece_vals:
+            elif not override and val.lower() in boat_piece_vals:
                 self.rows_boat_pieces_num[row] += 1
                 self.cols_boat_pieces_num[col] += 1
 
@@ -111,39 +111,31 @@ class Board:
         board_size = len(rows_fixed_num)
 
         cells = [["?" for _ in range(board_size)] for _ in range(board_size)]
+        brd = Board(cells)
+        brd.boats_distribution = [0, 4, 3, 2, 1]
+        brd.rows_boat_pieces_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        brd.rows_water_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        brd.cols_boat_pieces_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        brd.cols_water_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
         hint_total = int(input())
         for _ in range(hint_total):
             hint = stdin.readline().strip("\n").split("\t")[1:]
             hint_row, hint_col = int(hint[0]), int(hint[1])
-            cells[hint_row][hint_col] = hint[2]  # inserts the hint into the board
+            # Inserts the hint into the board
+            brd.set_value(hint_row, hint_col, hint[2])
 
-        return Board(cells).get_initial_state()
+        # Isolates starting pieces and checks for initial completed boats
+        for row in range(brd.size):
+            for col in range(brd.size):
+                if brd.get_value(row, col) in boat_piece_vals:
+                    brd.isolate_boat_piece(row, col, brd.get_value(row, col))
+        for row in range(brd.size):
+            for col in range(brd.size):
+                if brd.get_value(row, col) in ("t", "l", "c"):
+                    brd.check_boat_completion(row, col)
 
-    def get_initial_state(self):
-        """Initializes internal counters for boats, boat pieces and water
-        pieces. Also isolates the starting pieces."""
-        self.boats_distribution = [0, 4, 3, 2, 1]
-        self.rows_boat_pieces_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.rows_water_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.cols_boat_pieces_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.cols_water_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        for row in range(self.size):
-            for col in range(self.size):
-                if self.get_value(row, col) in boat_piece_vals:
-                    self.rows_boat_pieces_num[row] += 1
-                    self.cols_boat_pieces_num[col] += 1
-                elif self.get_value(row, col) in water_vals:
-                    self.rows_water_num[row] += 1
-                    self.cols_water_num[col] += 1
-        for row in range(self.size):
-            for col in range(self.size):
-                if self.get_value(row, col) in boat_piece_vals:
-                    self.isolate_boat_piece(row, col, self.get_value(row, col))
-        for row in range(self.size):
-            for col in range(self.size):
-                if self.get_value(row, col) in ("t", "l", "c"):
-                    self.check_boat_completion(row, col)
-        return self.reduce_board()
+        return brd.reduce_board()
 
     def reduce_board(self):
         """Infers from the current board the pieces that can be placed by
@@ -170,6 +162,7 @@ class Board:
                     if self.get_value(row, col) == "x":
                         self.isolate_boat_piece(row, col, "x")
                         self.find_boat_piece(row, col)
+
         return self
 
     def check_boat_piece_isolation(self, row: int, col: int, boat_type: str):
@@ -215,6 +208,7 @@ class Board:
                     and touching_adjacents[i + 1] in boat_piece_vals
                 ):
                     return False
+
         return True
 
     def check_boat_completion(self, row: int, col: int):
@@ -225,6 +219,7 @@ class Board:
         if val == "c":
             self.boats_distribution[1] -= 1  # it's a submarine that has size 1
             return
+
         if val == "m" and self.get_value(row - 1, col) in boat_piece_vals:
             d_row, d_col = -1, 0
         elif val == "m" and self.get_value(row, col - 1) in boat_piece_vals:
@@ -291,7 +286,7 @@ class Board:
             if self.check_boat_piece_isolation(row, col, boat_piece_val):
                 break
 
-        self.set_value(row, col, boat_piece_val, True, False)
+        self.set_value(row, col, boat_piece_val, True)
         self.check_boat_completion(row, col)
 
     def is_placement_valid(self, row: int, col: int, size: int, orientation: str):
@@ -310,6 +305,7 @@ class Board:
             i_col += d_col
         if count == size:
             return False
+
         for i in range(size):
             val = self.get_value(row, col)
             if i == 0 and val not in ("?", "x", orientation):
@@ -332,6 +328,7 @@ class Board:
                 return False
             row += d_row
             col += d_col
+
         return True
 
     def get_placements_for_boat(self, size: int):
@@ -381,7 +378,7 @@ class Board:
             if new_board.get_value(row, col) == "?":
                 new_board.set_value(row, col, boat_type)
             elif new_board.get_value(row, col) == "x":
-                new_board.set_value(row, col, boat_type, True, False)
+                new_board.set_value(row, col, boat_type, True)
             new_board.isolate_boat_piece(row, col, boat_type)
             row += d_row
             col += d_col
@@ -467,12 +464,11 @@ class Bimaru(Problem):
 
     def h(self, node: Node):
         """Heuristic function used for informed searches."""
-        brd = node.state.board
-        rows_diff, cols_diff = [], []
+        brd, diff = node.state.board, 0
         for i in range(node.state.board.size):
-            rows_diff.append(rows_fixed_num[i] - brd.rows_boat_pieces_num[i])
-            cols_diff.append(cols_fixed_num[i] - brd.cols_boat_pieces_num[i])
-        return sum(rows_diff) + sum(cols_diff)
+            diff += rows_fixed_num[i] - brd.rows_boat_pieces_num[i]
+            diff += cols_fixed_num[i] - brd.cols_boat_pieces_num[i]
+        return diff
 
 
 if __name__ == "__main__":
