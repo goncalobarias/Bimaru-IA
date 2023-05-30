@@ -1,6 +1,9 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
+# Ignore wrong detected perl file
+report/.latexmkrc linguist-vendored
+
 # Vendor everything but the solver
 src/search.py linguist-vendored
 src/utils.py linguist-vendored
