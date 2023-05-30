@@ -50,12 +50,22 @@ class Board:
             return
         if (not override and self.get_value(row, col) == "?") or override:
             self.cells[row][col] = val
+            if val == "x":
+                self.isolate_boat_piece(row, col, "x")
             if not override and val.lower() in water_vals:
                 self.rows_water_num[row] += 1
                 self.cols_water_num[col] += 1
+                if self.size - self.rows_water_num[row] < rows_fixed_num[row]:
+                    self.is_invalid = True
+                if self.size - self.cols_water_num[col] < cols_fixed_num[col]:
+                    self.is_invalid = True
             elif not override and val.lower() in boat_piece_vals:
                 self.rows_boat_pieces_num[row] += 1
                 self.cols_boat_pieces_num[col] += 1
+                if self.rows_boat_pieces_num[row] > rows_fixed_num[row]:
+                    self.is_invalid = True
+                if self.cols_boat_pieces_num[col] > cols_fixed_num[col]:
+                    self.is_invalid = True
 
     def get_adjacent_touching_values(self, row: int, col: int):
         return (
@@ -130,8 +140,6 @@ class Board:
             for col in range(brd.size):
                 if brd.get_value(row, col) in boat_piece_vals:
                     brd.isolate_boat_piece(row, col, brd.get_value(row, col))
-        for row in range(brd.size):
-            for col in range(brd.size):
                 if brd.get_value(row, col) in ("t", "l", "c"):
                     brd.check_boat_completion(row, col)
 
@@ -141,27 +149,42 @@ class Board:
         """Infers from the current board the pieces that can be placed by
         scanning the board and the counters. When a row/column is already full,
         it fills the rest with water. Also tries to find the 'x' boat pieces."""
-        for _ in range(2):
-            # We do this outer for loop because finding boat pieces could possibly
-            # let us infer more rows/columns that can be filled with water.
+        cont = True
+        while cont:
+            cont = False
             for diag in range(self.size):
-                if self.size - self.rows_water_num[diag] == rows_fixed_num[diag]:
+                if (
+                    self.size - self.rows_water_num[diag] == rows_fixed_num[diag]
+                    and self.rows_boat_pieces_num[diag] != rows_fixed_num[diag]
+                ):
+                    cont = True
                     for col in range(self.size):
                         self.set_value(diag, col, "x")
-                elif self.rows_boat_pieces_num[diag] == rows_fixed_num[diag]:
+                elif (
+                    self.rows_boat_pieces_num[diag] == rows_fixed_num[diag]
+                    and self.size - self.rows_water_num[diag] != rows_fixed_num[diag]
+                ):
+                    cont = True
                     for col in range(self.size):
                         self.set_value(diag, col, ".")
-                if self.size - self.cols_water_num[diag] == cols_fixed_num[diag]:
+                if (
+                    self.size - self.cols_water_num[diag] == cols_fixed_num[diag]
+                    and self.cols_boat_pieces_num[diag] != cols_fixed_num[diag]
+                ):
+                    cont = True
                     for row in range(self.size):
                         self.set_value(row, diag, "x")
-                elif self.cols_boat_pieces_num[diag] == cols_fixed_num[diag]:
+                elif (
+                    self.cols_boat_pieces_num[diag] == cols_fixed_num[diag]
+                    and self.size - self.cols_water_num[diag] != cols_fixed_num[diag]
+                ):
+                    cont = True
                     for row in range(self.size):
                         self.set_value(row, diag, ".")
-            for row in range(self.size):
-                for col in range(self.size):
-                    if self.get_value(row, col) == "x":
-                        self.isolate_boat_piece(row, col, "x")
-                        self.find_boat_piece(row, col)
+        for row in range(self.size):
+            for col in range(self.size):
+                if self.get_value(row, col) == "x":
+                    self.find_boat_piece(row, col)
 
         return self
 
@@ -336,17 +359,16 @@ class Board:
         a certain size."""
         placements = ()
         for diag in range(self.size):
-            orientation = "l"
-            if size == 1:
-                orientation = "c"
+            orientation = "c"
+            if size != 1:
+                orientation = "l"
             if rows_fixed_num[diag] >= size:
                 for col in range(self.size - size + 1):
                     if self.is_placement_valid(diag, col, size, orientation):
                         placements += ((diag, col, size, orientation),)
 
-            orientation = "t"
-            if size == 1:
-                orientation = "c"
+            if size != 1:
+                orientation = "t"
             if cols_fixed_num[diag] >= size:
                 for row in range(self.size - size + 1):
                     if self.is_placement_valid(row, diag, size, orientation):
@@ -393,13 +415,6 @@ class Board:
             self.is_invalid = True
         if self.is_invalid or sum(self.boats_distribution) != 0:
             return False
-
-        for row, row_num in enumerate(rows_fixed_num):
-            if self.rows_boat_pieces_num[row] != row_num:
-                return False
-        for col, col_num in enumerate(cols_fixed_num):
-            if self.cols_boat_pieces_num[col] != col_num:
-                return False
 
         self.reduce_board()
         return True
@@ -476,7 +491,7 @@ if __name__ == "__main__":
     Use a search technique to solve the instance.
     Retrieve the solution from the resulting node.
     Print to the standard output in the indicated format."""
-    board = Board.parse_instance()
-    bimaru = Bimaru(board)
-    goal_node = astar_search(bimaru)
+    brd = Board.parse_instance()
+    bimaru = Bimaru(brd)
+    goal_node = depth_first_tree_search(bimaru)
     print(goal_node.state.board)

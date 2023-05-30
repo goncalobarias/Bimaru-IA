@@ -10,16 +10,16 @@ files=$(ls ./tests/ | grep ".txt")
 for file in $files
 do
   echo -e "Testing $file..."
-  python ./src/bimaru.py < ./tests/$file > /tmp/bimaru.out
+  python ./src/bimaru.py < ./tests/"$file" > /tmp/bimaru.out
   output=$(cat /tmp/bimaru.out)
-  output_file=$(echo $file | sed 's/txt/out/')
-  expected_output=$(cat ./tests/$output_file)
+  output_file=$(echo "$file" | sed 's/txt/out/')
+  expected_output=$(cat ./tests/"$output_file")
   if [ "$output" = "$expected_output" ]
   then
     echo -e "\e[32mTest $file SUCCESS\e[0m"
   else
     echo -e "\e[31mTest $file FAILED\e[0m"
-    # diff between /tmp/bimaru.out and ./$output_file
-    colordiff -u ./tests/$output_file /tmp/bimaru.out
+    # diff between ./tests/$output_file and /tmp/bimaru.out
+    colordiff -u ./tests/"$output_file" /tmp/bimaru.out
   fi
 done
