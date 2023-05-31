@@ -122,7 +122,7 @@ class Board:
 
         cells = [["?" for _ in range(board_size)] for _ in range(board_size)]
         brd = Board(cells)
-        brd.boats_distribution = [0, 4, 3, 2, 1]
+        brd.boats_num = [0, 4, 3, 2, 1]
         brd.rows_boat_pieces_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         brd.rows_water_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         brd.cols_boat_pieces_num = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -240,7 +240,7 @@ class Board:
         boat it updates the counter with the number of boats available."""
         val = self.get_value(row, col)
         if val == "c":
-            self.boats_distribution[1] -= 1  # it's a submarine that has size 1
+            self.boats_num[1] -= 1  # it's a submarine that has size 1
             return
 
         if val == "m" and self.get_value(row - 1, col) in boat_piece_vals:
@@ -266,7 +266,7 @@ class Board:
             self.is_invalid = True
             return
         if self.get_value(row + d_row, col + d_col) == o_extreme:
-            self.boats_distribution[size] -= 1
+            self.boats_num[size] -= 1
 
     def isolate_boat_piece(self, row: int, col: int, boat_type: str):
         """Depending on the boat type, it isolates them according to the game
@@ -387,8 +387,8 @@ class Board:
         new_board.cols_boat_pieces_num = self.cols_boat_pieces_num.copy()
         new_board.rows_water_num = self.rows_water_num.copy()
         new_board.cols_water_num = self.cols_water_num.copy()
-        new_board.boats_distribution = self.boats_distribution.copy()
-        new_board.boats_distribution[size] -= 1
+        new_board.boats_num = self.boats_num.copy()
+        new_board.boats_num[size] -= 1
         d_row, d_col, o_extreme = orientation_vecs[orientation]
         for i in range(size):
             if i == 0:
@@ -411,9 +411,9 @@ class Board:
         """Checks if the board is a valid solution to the puzzle. For a
         Bimaru puzzle to be complete it needs to have all the constraints in
         the columns and rows satisfied and be a valid board."""
-        if any(num < 0 for num in self.boats_distribution):
+        if any(num < 0 for num in self.boats_num):
             self.is_invalid = True
-        if self.is_invalid or sum(self.boats_distribution) != 0:
+        if self.is_invalid or sum(self.boats_num) != 0:
             return False
 
         self.reduce_board()
@@ -453,13 +453,13 @@ class Bimaru(Problem):
     def actions(self, state: BimaruState):
         """Returns a list of actions that can be performed from
         from the state passed as an argument."""
-        if state.board.is_invalid or sum(state.board.boats_distribution) == 0:
+        if state.board.is_invalid or sum(state.board.boats_num) == 0:
             return ()
 
         for next_size in reversed(range(4 + 1)):
             if next_size == 0:
                 return ()
-            if state.board.boats_distribution[next_size] != 0:
+            if state.board.boats_num[next_size] != 0:
                 break
 
         return state.board.get_placements_for_boat(next_size)
@@ -479,11 +479,10 @@ class Bimaru(Problem):
 
     def h(self, node: Node):
         """Heuristic function used for informed searches."""
-        brd, diff = node.state.board, 0
+        brd, row_diff = node.state.board, 0
         for i in range(node.state.board.size):
-            diff += rows_fixed_num[i] - brd.rows_boat_pieces_num[i]
-            diff += cols_fixed_num[i] - brd.cols_boat_pieces_num[i]
-        return diff
+            row_diff += rows_fixed_num[i] - brd.rows_boat_pieces_num[i]
+        return row_diff
 
 
 if __name__ == "__main__":
@@ -493,5 +492,5 @@ if __name__ == "__main__":
     Print to the standard output in the indicated format."""
     brd = Board.parse_instance()
     bimaru = Bimaru(brd)
-    goal_node = depth_first_tree_search(bimaru)
+    goal_node = recursive_best_first_search(bimaru)
     print(goal_node.state.board)
