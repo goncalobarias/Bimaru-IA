@@ -44,16 +44,39 @@
 \newcommand{\op}{\operatorname}
 
 \begin{document}
-\section{Descrição e Modelação do Problema}
+\section{Introdução}
+Bom dia, vimos aqui apresentar a nossa solução para um solucionador do jogo \textit{Bimaru}.
+A nossa solução formaliza o jogo \textit{Bimaru} como um \textbf{Problema de Satisfação de Restrições}.
 
-\section{Estratégia de Solução}
+\section{Modelação do Problema e Estratégia de Solução}
+Cada \textbf{estado} do tabuleiro é representado por uma grelha quadrada de dimensões $10$ x $10$ em que
+o estado inicial é lido do \textit{standard input}. Mantemos ainda contadores do número de peças de barco e
+número de peças de água por linha e coluna e do número de barcos colocados no tabuleiro.
+Assim, as variáveis que tivemos em consideração foi cada posição do tabuleiro, sendo os domínios de todas igual
+às letras que representam cada tipo de peça, tal como foi sugerido na representação externa do tabuleiro
+apresentado no enunciado. Para as posições por preencher decidimos usar um ponto de interrogação.
+
+% Explicar as restrições do problema(nenhum barco a tocar noutro, número de barcos tem de ser exatamente igual ao número para cada tamanho,
+% linhas e colunas têm de ter igual número de peças que as fornecidas em rows_num(i) e cols_num(i)).
+% Explicar como fazemos o problema obedecer às restrições na nossa solução.
+% Explicar que as verificamos sempre que efetuamos uma alteração no tabuleiro, sendo que isto permite reduzir drasticamente o fator
+% de ramificação, diminuindo o custo de memória, e evitando tempo de computação desperdiçado.
+
+% No goal_test mencionamos que como temos como invariante as restrições sempre todas verificadas, apenas precisamos de tempo constante
+% para ver se todos os barcos estão colocados.
+% Explicar como efetuamos inferência no nosso problema de CSP com o reduce_board e como é que isso reduz ainda mais o fator de ramificação (prunning),
+% completando barcos antes de ter de criar sucessores com ele colocado.
+
+% Explicar como usamos procura no nosso CSP junto com a inferência para chegar à solução (o que ê uma action e como obtemos actions,
+% o que ê o resultado de uma action, o que ê o goal_test, falar de forward checking, backtracking sempre que encontramos tabuleiro inválido, etc.).
+% Mencionar que seguimos a heurística de maior grau ao escolher sempre o barco de maior tamanho possível, pois isso atribui valores
+% à maior quantidade de variáveis, escolhendo assim mais variáveis que estão envolvidas em restrições (nomeadamente restrições do número por linha/coluna).
+% No forward checking verifica-se a consistência da variável alterada para com as variáveis adjacentes na árvore de restrições.
 
 \section{Avaliação Experimental}
-
-\section{Conclusões}
-
-\clearpage
-
-\section*{Anexo}
+% Falar em concreto das procuras usadas, tal como a nossa heurística.
+% Mostrar gráficos das procuras e explicar o porquê do DFS ser bom o suficiente e até melhor que
+% as procuras informadas (a nossa heurística acaba por não ser boa).
+% Contrastar BFS com DFS.
 
 \end{document}
