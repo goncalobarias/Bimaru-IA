@@ -16,7 +16,7 @@ can be oriented horizontally or vertically and cannot occupy adjacent squares. T
 row and column counts and hints about the state of each square on the grid, indicating whether it
 is empty, occupied by a submarine, or the end of a ship. The grid generally has dimensions of 10 x 10.
 
-[Project Statement](docs/statement.pdf) | [Report Guide](report/report.pdf) | [Report Slides](report/presentation.pptx)
+[Project Statement](docs/statement.pdf) | [Report Guide](report/report.pdf) | [Report Slides](report/report.pptx)
 
 ## Formatting
 
