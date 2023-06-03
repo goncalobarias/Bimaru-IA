@@ -30,50 +30,56 @@
 
 \pagestyle{fancy}
 \fancyhf{}
-\rhead{Grupo \textbf{al010}}
-\lhead{Guião Relatório IA 2022/2023 LEIC-A}
-\cfoot{Gonçalo Bárias (103124) e Raquel Braunschweig (102624)}
+\rfoot{Grupo \textbf{al010}}
+\lfoot{Gonçalo Bárias (103124) e Raquel Braunschweig (102624)}
 
-\definecolor{pastel-green}{HTML}{CBE896}
-\definecolor{pastel-yellow}{HTML}{FEE440}
-
+\renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0.2pt}
 
-\renewcommand{\labelitemii}{$\circ$}
-\renewcommand{\labelitemiii}{$\diamond$}
-\newcommand{\op}{\operatorname}
-
 \begin{document}
-\section{Introdução}
-Bom dia, vimos aqui apresentar a nossa solução para um solucionador do jogo \textit{Bimaru}.
+
+\section*{\center{Guião Relatório IA 2022/2023 LEIC-A}}
+\vspace*{10pt}
+
+Bom dia, vimos aqui apresentar um solucionador do jogo \textit{Bimaru}.
 A nossa solução formaliza o jogo \textit{Bimaru} como um \textbf{Problema de Satisfação de Restrições}.
 
-\section{Modelação do Problema e Estratégia de Solução}
 Cada \textbf{estado} do tabuleiro é representado por uma grelha quadrada de dimensões $10$ x $10$ em que
 o estado inicial é lido do \textit{standard input}. Mantemos ainda contadores do número de peças de barco e
 número de peças de água por linha e coluna e do número de barcos colocados no tabuleiro.
-Assim, as variáveis que tivemos em consideração foi cada posição do tabuleiro, sendo os domínios de todas igual
-às letras que representam cada tipo de peça, tal como foi sugerido na representação externa do tabuleiro
-apresentado no enunciado. Para as posições por preencher decidimos usar um ponto de interrogação.
+Assim, as variáveis que tivemos em consideração foi cada posição do tabuleiro, sendo os domínios de todas, igual
+às letras que representam cada peça, tal como foi sugerido na representação externa do tabuleiro
+apresentado no enunciado. Para as variáveis por atribuir decidimos usar um ponto de interrogação (\texttt{?}) e para
+as variáveis que apenas têm peças de barco no domínio decidimos usar a letra \texttt{x}.
 
-% Explicar as restrições do problema(nenhum barco a tocar noutro, número de barcos tem de ser exatamente igual ao número para cada tamanho,
-% linhas e colunas têm de ter igual número de peças que as fornecidas em rows_num(i) e cols_num(i)).
-% Explicar como fazemos o problema obedecer às restrições na nossa solução.
-% Explicar que as verificamos sempre que efetuamos uma alteração no tabuleiro, sendo que isto permite reduzir drasticamente o fator
-% de ramificação, diminuindo o custo de memória, e evitando tempo de computação desperdiçado.
+O objetivo do jogo é preencher totalmente o tabuleiro com peças, de tal forma que o número de peças de barco em cada linha ou coluna tem de ser
+precisamente igual ao número fornecido como input para essa linha ou coluna, têm também de existir quatro submarinos, três contratorpedeiros,
+dois cruzadores e um couraçado dispostos horizontal ou verticalmente, em que nenhum deles pode se encontrar adjacente a nenhum outro, nem
+mesmo na diagonal.
+Assim, sempre que é feita uma atribuição a uma das variáveis, a nossa solução apenas a aceita se não quebrar nenhuma das restrições
+mencionadas. Tendo em consideração que para estados intermédios apenas não se pode exceder o número de barcos e os números de peças
+por linha e coluna, mas é possível ter valores inferiores para esses contadores.
 
-% No goal_test mencionamos que como temos como invariante as restrições sempre todas verificadas, apenas precisamos de tempo constante
-% para ver se todos os barcos estão colocados.
-% Explicar como efetuamos inferência no nosso problema de CSP com o reduce_board e como é que isso reduz ainda mais o fator de ramificação (prunning),
-% completando barcos antes de ter de criar sucessores com ele colocado.
+Uma \textbf{ação} é representada por um 4-tuplo, em que as primeiras duas entradas representam a posição de um extremo do barco, a terceira entrada representa o
+tamanho do barco e a última entrada representa a orientação do barco através da peça da ponta. O \textbf{resultado} de uma ação é atribuir as variáveis
+do tabuleiro com peças do barco numa cópia do estado, de modo a colocar esse barco no tabuleiro.
+Considerou-se a Heurística do Maior Grau, ou seja, quando se geram os sucessores de um estado damos sempre prioridade ao barco do maior tamanho possível
+que obedece ao número de barcos no tabuleiro, pois conseguimos atribuir valores concretos a mais variáveis que, por sua vez estão envolvidas
+num maior número de restrições do que no caso de se considerar um barco menor.
+Estas otimizações permitem reduzir o fator de ramificação da árvore de procura, diminuindo o custo de memória e tempo de computação desnecessário.
+Escolheu-se utilizar \textit{forward checking} para unir a inferência com os algoritmos de procura. Após uma ação, é verificada a consistência das restrições
+no grafo de restrições e no caso de alguma variável ficar com domínio vazio é efetuado \textit{backtracking}.
 
-% Explicar como usamos procura no nosso CSP junto com a inferência para chegar à solução (o que ê uma action e como obtemos actions,
-% o que ê o resultado de uma action, o que ê o goal_test, falar de forward checking, backtracking sempre que encontramos tabuleiro inválido, etc.).
-% Mencionar que seguimos a heurística de maior grau ao escolher sempre o barco de maior tamanho possível, pois isso atribui valores
-% à maior quantidade de variáveis, escolhendo assim mais variáveis que estão envolvidas em restrições (nomeadamente restrições do número por linha/coluna).
-% No forward checking verifica-se a consistência da variável alterada para com as variáveis adjacentes na árvore de restrições.
+Como nenhuma das restrições é quebrada, então o \textbf{teste objetivo} pode ser feito em tempo constante, pois apenas temos de ver se todos
+os barcos foram utilizados, estando todas as outras posições implicitamente com água.
+A solução tenta sempre reduzir o tabuleiro o máximo possível em cada estado, ou seja, nas linhas e colunas em que o número de peças por colocar
+é igual ao número de variáveis por atribuir ou em que o número de peças por colocar é zero, atribui-se às variáveis restantes dessas
+linhas e colunas o único valor dos seus domínios que obedece a essa restrição, de modo a manter a consistência.
+Sempre que possível a nossa solução restringe o domínio das variáveis a partir das atribuições que vão sendo efetuadas, ou seja,
+propagamos as restrições quando, por exemplo, restringimos o domínio das variáveis que rodeiam outra à qual foi atribuída uma peça do topo de um barco.
+Isto possibilita a descoberta de novos barcos antes de ter de procurar posições para ele, o que reduz de forma significativa o fator de ramificação.
 
-\section{Avaliação Experimental}
+% \section{Avaliação Experimental} (provavelmente não vamos ter tempo para isto)
 % Falar em concreto das procuras usadas, tal como a nossa heurística.
 % Mostrar gráficos das procuras e explicar o porquê do DFS ser bom o suficiente e até melhor que
 % as procuras informadas (a nossa heurística acaba por não ser boa).
