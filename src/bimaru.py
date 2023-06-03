@@ -492,5 +492,5 @@ if __name__ == "__main__":
     Print to the standard output in the indicated format."""
     brd = Board.parse_instance()
     bimaru = Bimaru(brd)
-    goal_node = recursive_best_first_search(bimaru)
+    goal_node = depth_first_tree_search(bimaru)
     print(goal_node.state.board)
