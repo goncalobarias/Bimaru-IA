@@ -54,7 +54,7 @@ Considerou-se a Heurística do Maior Grau, ou seja, quando se geram os sucessore
 que obedece ao número de barcos no tabuleiro, pois conseguimos atribuir valores concretos a mais variáveis que, por sua vez estão envolvidas
 num maior número de restrições do que no caso de se considerar um barco menor.
 Estas otimizações permitem reduzir o fator de ramificação da árvore de procura, diminuindo o custo de memória e tempo de computação desnecessário.
-Escolheu-se utilizar \textit{forward checking} para unir a inferência com os algoritmos de procura e assim após uma ação, é verificada a consistência das restrições
+Escolheu-se utilizar \textit{forward checking} para unir a inferência com os algoritmos de procura e assim após uma ação, é verificada a consistência
 no grafo de restrições e no caso de alguma variável ficar com domínio vazio é efetuado \textit{backtracking}.
 
 A procura usada foi uma procura cega, pois tendo em consideração que o tamanho do tabuleiro está limitado, a árvore nunca é grande
@@ -62,10 +62,10 @@ ao ponto das procuras informadas ajudarem de uma forma significativa. De entre a
 expande a árvore quase toda, já que o nó solução está no último nível da árvore, na maior parte dos casos.
 
 Como nenhuma das restrições é quebrada, então o \textbf{teste objetivo} pode ser feito em tempo constante, pois apenas temos de ver se todos
-os barcos foram utilizados, estando todas as outras posições implicitamente com água.
+os barcos foram utilizados.
 A solução tenta sempre reduzir o tabuleiro o máximo possível em cada estado, ou seja, nas linhas e colunas em que o número de peças por colocar
-é igual ao número de variáveis por atribuir ou em que o número de peças por colocar é zero, restringem-se as variáveis restantes dessas
-linhas e colunas com os únicos valores dos seus domínios que obedecem a essa restrição, de modo a manter a consistência.
+é igual ao número de variáveis por atribuir mais o número de variáveis atribuídas com peças de barco ou em que o número de peças por colocar é zero,
+restringem-se as variáveis restantes dessas linhas e colunas com os únicos valores dos seus domínios que obedecem a essa restrição, de modo a manter a consistência.
 Assim, a nossa solução propaga sempre as restrições, limitando o domínio das variáveis. Neste exemplo, quando é atribuída uma peça de topo a uma variável,
 conseguimos restringir o domínio das variáveis adjacentes no tabuleiro.
 Temos aqui outro exemplo em que o nosso programa consegue limitar o domínio da variável para apenas \texttt{t}, pois o seu domínio era apenas
